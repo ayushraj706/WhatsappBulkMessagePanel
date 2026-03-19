@@ -1,33 +1,83 @@
 "use client";
-import { useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
-import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 
-export default function ChatPage() {
+import { useState, useEffect } from "react";
+import { db, auth } from "@/lib/firebase"; // Tumhari hardcoded file
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
+import { ChatBubble, ChatBubbleMessage } from "@/components/ui/chat/chat-bubble";
+import { ChatMessageList } from "@/components/ui/chat/chat-message-list";
+import { ChatInput } from "@/components/ui/chat/chat-input";
+
+export default function BaseKeyChat() {
   const [messages, setMessages] = useState<any[]>([]);
 
+  // 1. Live Messages Load Karna (Firestore se)
   useEffect(() => {
-    // Firestore se real-time messages uthana
     const q = query(collection(db, "chats"), orderBy("timestamp", "asc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const msgList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setMessages(msgList);
+      setMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
     return () => unsubscribe();
   }, []);
 
+  // 2. Message Bhejne ka Logic
+  const handleSend = async (text: string) => {
+    if (!text.trim()) return;
+
+    try {
+      // Firebase mein save karo taaki UI par turant dikhe
+      await addDoc(collection(db, "chats"), {
+        text,
+        sender: "Me",
+        type: "sent",
+        timestamp: serverTimestamp(),
+      });
+
+      // Meta API ko call karo (Jo iamd2epak ki repo mein pehle se bani hai)
+      await fetch("/api/whatsapp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: "RECEIVER_NUMBER", // Yahan test ke liye apna number dalo
+          message: text,
+        }),
+      });
+    } catch (err) {
+      console.error("Error sending message:", err);
+    }
+  };
+
   return (
-    <div className="flex flex-col h-screen bg-gray-900 text-white p-4">
-      <h1 className="text-xl font-bold mb-4 border-b border-gray-700 pb-2">BaseKey Live Chat</h1>
-      <div className="flex-1 overflow-y-auto space-y-3">
-        {messages.map((msg) => (
-          <div key={msg.id} className={`p-3 rounded-lg max-w-[70%] ${msg.type === 'incoming' ? 'bg-gray-700 self-start' : 'bg-green-700 self-end ml-auto'}`}>
-            <p className="text-xs text-gray-400">{msg.sender}</p>
-            <p>{msg.text}</p>
-          </div>
-        ))}
+    <div className="flex flex-col h-screen bg-black ml-64 border-l border-gray-800">
+      {/* Header */}
+      <div className="p-4 border-b border-gray-800 bg-gray-900/50 backdrop-blur-md">
+        <h2 className="text-white font-bold">BaseKey Live Chat</h2>
       </div>
-      {/* Niche ek input box bana lena reply bhejane ke liye */}
+
+      {/* Message List */}
+      <div className="flex-1 overflow-y-auto p-4">
+        <ChatMessageList>
+          {messages.map((msg) => (
+            <ChatBubble key={msg.id} variant={msg.type === "sent" ? "sent" : "received"}>
+              <ChatBubbleMessage variant={msg.type === "sent" ? "sent" : "received"}>
+                {msg.text}
+              </ChatBubbleMessage>
+            </ChatBubble>
+          ))}
+        </ChatMessageList>
+      </div>
+
+      {/* Input Box */}
+      <div className="p-4 bg-gray-900/50">
+        <ChatInput 
+          placeholder="Apna sandesh likhein..." 
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleSend(e.currentTarget.value);
+              e.currentTarget.value = "";
+            }
+          }}
+        />
+      </div>
     </div>
   );
 }
