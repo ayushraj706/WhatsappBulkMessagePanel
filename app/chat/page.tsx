@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { db, auth } from "@/lib/firebase"; // Tumhari hardcoded file
+import { useState, useEffect, useRef } from "react"; // useRef joda scroll ke liye
+import { db, auth } from "@/lib/firebase"; 
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
 import { ChatBubble, ChatBubbleMessage } from "@/components/ui/chat/chat-bubble";
 import { ChatMessageList } from "@/components/ui/chat/chat-message-list";
@@ -9,8 +9,9 @@ import { ChatInput } from "@/components/ui/chat/chat-input";
 
 export default function BaseKeyChat() {
   const [messages, setMessages] = useState<any[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null); // Scroll reference
 
-  // 1. Live Messages Load Karna (Firestore se)
+  // 1. Live Messages Load Karna
   useEffect(() => {
     const q = query(collection(db, "chats"), orderBy("timestamp", "asc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -19,12 +20,23 @@ export default function BaseKeyChat() {
     return () => unsubscribe();
   }, []);
 
-  // 2. Message Bhejne ka Logic
+  // 2. Auto-scroll jab naya message aaye
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  // 3. Message Bhejne ka Logic
   const handleSend = async (text: string) => {
     if (!text.trim()) return;
 
+    // Yahan hum pehle message ka sender number nikal rahe hain reply dene ke liye
+    // Asali app mein yahan 'SelectedContact' ka number hona chahiye
+    const lastIncomingMessage = [...messages].reverse().find(m => m.type === "incoming");
+    const receiverNumber = lastIncomingMessage?.sender || "91XXXXXXXXXX"; 
+
     try {
-      // Firebase mein save karo taaki UI par turant dikhe
       await addDoc(collection(db, "chats"), {
         text,
         sender: "Me",
@@ -32,32 +44,33 @@ export default function BaseKeyChat() {
         timestamp: serverTimestamp(),
       });
 
-      // Meta API ko call karo (Jo iamd2epak ki repo mein pehle se bani hai)
       await fetch("/api/whatsapp/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          to: "RECEIVER_NUMBER", // Yahan test ke liye apna number dalo
+          to: receiverNumber, // Ab ye dynamic hai!
           message: text,
         }),
       });
     } catch (err) {
-      console.error("Error sending message:", err);
+      console.error("Error:", err);
     }
   };
 
   return (
     <div className="flex flex-col h-screen bg-black ml-64 border-l border-gray-800">
-      {/* Header */}
       <div className="p-4 border-b border-gray-800 bg-gray-900/50 backdrop-blur-md">
-        <h2 className="text-white font-bold">BaseKey Live Chat</h2>
+        <h2 className="text-white font-bold text-lg">BaseKey Live Chat</h2>
       </div>
 
-      {/* Message List */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 custom-scrollbar" ref={scrollRef}>
         <ChatMessageList>
           {messages.map((msg) => (
             <ChatBubble key={msg.id} variant={msg.type === "sent" ? "sent" : "received"}>
+              {/* Incoming message hai toh number dikhao */}
+              {msg.type === "incoming" && (
+                <span className="text-[10px] text-gray-500 ml-2">{msg.sender}</span>
+              )}
               <ChatBubbleMessage variant={msg.type === "sent" ? "sent" : "received"}>
                 {msg.text}
               </ChatBubbleMessage>
@@ -66,12 +79,12 @@ export default function BaseKeyChat() {
         </ChatMessageList>
       </div>
 
-      {/* Input Box */}
       <div className="p-4 bg-gray-900/50">
         <ChatInput 
-          placeholder="Apna sandesh likhein..." 
+          placeholder="Message likhein aur Enter dabayein..." 
           onKeyDown={(e) => {
-            if (e.key === "Enter") {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
               handleSend(e.currentTarget.value);
               e.currentTarget.value = "";
             }
