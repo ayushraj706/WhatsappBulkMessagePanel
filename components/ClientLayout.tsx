@@ -32,6 +32,7 @@ export default function ClientLayout({
     }, [pathname, router]);
 
     const isLoginPage = pathname === "/login";
+    const isChatPage = pathname === "/chat"; // Chat page check
 
     if (loading) {
         return (
@@ -53,8 +54,11 @@ export default function ClientLayout({
             )}
             <main
                 className={cn(
-                    "min-h-screen transition-all duration-300 pb-24 md:pb-8",
-                    !isLoginPage && isAuth ? "md:ml-64 p-4 md:p-8" : ""
+                    "min-h-screen transition-all duration-300",
+                    // Agar chat page hai toh padding aur extra margin hata do
+                    !isLoginPage && isAuth ? "md:ml-64" : "",
+                    !isChatPage && !isLoginPage && isAuth ? "p-4 md:p-8 pb-24 md:pb-8" : "",
+                    isChatPage ? "pb-16 md:pb-0" : "" // Mobile nav ke liye space
                 )}
             >
                 {isLoginPage || isAuth ? children : null}
