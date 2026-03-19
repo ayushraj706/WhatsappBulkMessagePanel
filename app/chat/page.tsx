@@ -51,46 +51,44 @@ export default function InstagramChat() {
   };
 
   return (
-    // ml-64 tabhi rakhna agar tumhara main Sidebar (WaBulk) 'fixed' hai
-    <div className="flex h-screen bg-black ml-64 text-white">
+    // ml-64 HATA DIYA HAI - Ab koi gap nahi aayega!
+    <div className="flex h-screen bg-black text-white w-full">
       
-      {/* 1. Contact Sidebar (Left Side) */}
-      <div className="w-72 border-r border-gray-800 flex flex-col flex-shrink-0">
+      {/* 1. Contact Sidebar (Left Side) - Ab ye WaBulk sidebar se chipak jayega */}
+      <div className="w-72 border-r border-gray-800 flex flex-col flex-shrink-0 bg-black">
         <div className="p-4 border-b border-gray-800">
           <h1 className="text-lg font-bold">Messages</h1>
         </div>
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
           {contacts.map((num) => (
             <div 
               key={num} 
               onClick={() => setSelectedContact(num)}
               className={cn(
-                "p-4 flex items-center gap-3 cursor-pointer transition-all border-b border-gray-900/50",
+                "p-4 flex items-center gap-3 cursor-pointer transition-all border-b border-gray-900/30",
                 selectedContact === num ? "bg-gray-800" : "hover:bg-gray-900"
               )}
             >
-              <div className="w-10 h-10 bg-gray-700 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold">
+              <div className="w-10 h-10 bg-gradient-to-tr from-gray-700 to-gray-600 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold border border-gray-700">
                 {num.toString().slice(-2)}
               </div>
               <div className="min-w-0">
                 <p className="font-semibold text-sm truncate">{num}</p>
-                <p className="text-[10px] text-gray-400 truncate text-green-500">Online</p>
+                <p className="text-[10px] text-green-500 truncate">Online</p>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* 2. Chat Area (Occupies all remaining space on the RIGHT) */}
+      {/* 2. Chat Area - Poori Right bachi hui jagah lega */}
       <div className="flex-1 flex flex-col bg-[#050505]">
         {selectedContact ? (
           <>
-            {/* Header */}
-            <div className="p-4 border-b border-gray-800 flex items-center gap-3 bg-black/40 backdrop-blur-md">
-              <span className="font-bold">{selectedContact}</span>
+            <div className="p-4 border-b border-gray-800 bg-black/40 backdrop-blur-md flex items-center gap-3">
+              <span className="font-bold text-sm">{selectedContact}</span>
             </div>
 
-            {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4" ref={scrollRef}>
               <ChatMessageList>
                 {filteredMessages.map((msg) => (
@@ -103,11 +101,10 @@ export default function InstagramChat() {
               </ChatMessageList>
             </div>
 
-            {/* Input - Sticky at Bottom */}
             <div className="p-4 border-t border-gray-800 bg-black">
-              <div className="flex items-center bg-gray-900 rounded-full px-4 py-2 border border-gray-800 focus-within:border-gray-600 transition-all">
+              <div className="flex items-center bg-gray-900 rounded-full px-4 py-1.5 border border-gray-800 focus-within:border-gray-600 transition-all">
                 <input 
-                  className="bg-transparent flex-1 outline-none text-sm p-1 text-white"
+                  className="bg-transparent flex-1 outline-none text-sm p-2 text-white"
                   placeholder="Message..."
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
@@ -125,7 +122,7 @@ export default function InstagramChat() {
              <div className="w-16 h-16 bg-gray-900 rounded-full flex items-center justify-center mb-4 border border-gray-800">
                 <span className="text-2xl">💬</span>
              </div>
-             <p className="text-sm">Select a chat to read messages</p>
+             <p className="text-sm font-medium">Select a chat to start messaging</p>
           </div>
         )}
       </div>
