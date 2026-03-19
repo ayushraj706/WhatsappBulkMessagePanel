@@ -65,13 +65,13 @@ export default function InstagramStyleChat() {
   };
 
   return (
-    // ml-64 HATA DIYA HAI - Ab koi gap nahi aayega Layout fix hone ke baad!
-    <div className="flex h-screen bg-black text-white w-full overflow-hidden">
+    // ml-64 tabhi rakhna agar main sidebar (WaBulk) 'fixed' hai
+    <div className="flex h-screen bg-black ml-64 text-white w-full overflow-hidden">
       
       {/* 1. Sleek Compact Sidebar (Target Style) */}
       <div className="w-72 border-r border-zinc-800 flex flex-col flex-shrink-0 bg-black">
         <div className="p-4 border-b border-zinc-800 flex items-center gap-3">
-          <ChatListHeaderIcon /> {/* Custom gradient icon component lagaya hai */}
+          <ChatListHeaderIcon /> {/* Customized gradient icon */}
           <div>
             <h1 className="text-lg font-bold tracking-tight">Messages</h1>
             <p className="text-xs text-zinc-500">Live WhatsApp Chat</p>
@@ -87,7 +87,7 @@ export default function InstagramStyleChat() {
                 selectedContact === num ? "bg-zinc-800" : "hover:bg-zinc-900"
               )}
             >
-              {/* Refined Initial Avatar (Number slice karke) */}
+              {/* Professional Avatar with Number Slice */}
               <div className="w-11 h-11 bg-zinc-700 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold border border-zinc-700">
                 {num.toString().slice(-2)}
               </div>
@@ -112,9 +112,13 @@ export default function InstagramStyleChat() {
               <ChatMessageList>
                 {filteredMessages.map((msg) => (
                   <ChatBubble key={msg.id} variant={msg.type === "sent" ? "sent" : "received"}>
+                    {/* Yahan maine bubbles ko Force kiya hai colors aur shape ke saath directly Tailwind Classes mein! */}
                     <ChatBubbleMessage 
-                       // FORCE BLUE & ZINC (Target style)
-                       className={msg.type === "sent" ? "bg-blue-600 text-white" : "bg-zinc-800 text-white"}
+                       className={cn(
+                         "text-sm tracking-tight",
+                         // FORCE BLUE & ZINC (Target design colors)
+                         msg.type === "sent" ? "bg-blue-600 text-white" : "bg-zinc-800 text-white"
+                       )}
                        variant={msg.type === "sent" ? "sent" : "received"}
                     >
                       {msg.text}
@@ -124,7 +128,7 @@ export default function InstagramStyleChat() {
               </ChatMessageList>
             </div>
 
-            {/* SLEEK PILL-SHAPED INPUT BOX (Target style) */}
+            {/* INTEGRATED PILL-SHAPED INPUT BOX (Target sleek design) */}
             <div className="p-4 border-t border-zinc-800 bg-black">
               <div className="flex items-center bg-zinc-900 rounded-full px-5 py-2.5 border border-zinc-800 focus-within:border-zinc-600 transition-all shadow-inner">
                 <input 
