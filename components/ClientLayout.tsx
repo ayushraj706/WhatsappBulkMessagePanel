@@ -1,5 +1,4 @@
 "use client";
-
 import Sidebar from "@/components/Sidebar";
 import BottomNav from "@/components/BottomNav";
 import { usePathname, useRouter } from "next/navigation";
@@ -7,11 +6,7 @@ import { useEffect, useState } from "react";
 import { isAuthenticated } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
-export default function ClientLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
+export default function ClientLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
     const [isAuth, setIsAuth] = useState(false);
@@ -32,18 +27,12 @@ export default function ClientLayout({
     }, [pathname, router]);
 
     const isLoginPage = pathname === "/login";
-    const isChatPage = pathname === "/chat"; // Chat page check
+    const isChatPage = pathname === "/chat";
 
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
-            </div>
-        );
-    }
+    if (loading) return null;
 
     return (
-        <>
+        <div className="bg-black min-h-screen">
             {!isLoginPage && isAuth && (
                 <>
                     <div className="hidden md:block">
@@ -55,14 +44,13 @@ export default function ClientLayout({
             <main
                 className={cn(
                     "min-h-screen transition-all duration-300",
-                    // Agar chat page hai toh padding aur extra margin hata do
                     !isLoginPage && isAuth ? "md:ml-64" : "",
-                    !isChatPage && !isLoginPage && isAuth ? "p-4 md:p-8 pb-24 md:pb-8" : "",
-                    isChatPage ? "pb-16 md:pb-0" : "" // Mobile nav ke liye space
+                    // Chat page par padding HATANI hai
+                    !isChatPage && !isLoginPage && isAuth ? "p-4 md:p-8" : ""
                 )}
             >
-                {isLoginPage || isAuth ? children : null}
+                {children}
             </main>
-        </>
+        </div>
     );
 }
