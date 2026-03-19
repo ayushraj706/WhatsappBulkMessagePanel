@@ -4,11 +4,13 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { logout } from "@/lib/auth";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Send, LogOut, MessageSquare } from "lucide-react";
+import { LayoutDashboard, Send, LogOut, MessageSquare, MessageCircle } from "lucide-react";
 
+// Yahan maine "Chat" jor diya hai
 const menuItems = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/" },
     { icon: Send, label: "Broadcast", href: "/broadcast" },
+    { icon: MessageCircle, label: "Chat", href: "/chat" }, 
 ];
 
 export default function Sidebar() {
