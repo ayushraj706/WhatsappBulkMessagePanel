@@ -42,27 +42,27 @@ export default function ChatFlowPage() {
   };
 
   return (
-    <div className="flex h-[calc(100dvh-56px)] md:h-screen bg-black text-white w-full overflow-hidden">
+    <div className="flex flex-1 bg-black text-white w-full overflow-hidden">
       
-      {/* 1. Contacts List View - Only show if no contact selected on mobile */}
+      {/* 1. Contacts View - Mobile par tabhi dikhega jab koi select na ho */}
       <div className={cn(
         "w-full md:w-80 border-r border-zinc-800 flex flex-col flex-shrink-0 bg-black",
         selectedContact ? "hidden md:flex" : "flex"
       )}>
-        <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
-          <h1 className="text-xl font-bold">Chats</h1>
+        <div className="p-4 border-b border-zinc-800">
+          <h1 className="text-xl font-bold tracking-tight">Messages</h1>
         </div>
         <div className="flex-1 overflow-y-auto">
           {contacts.map((num) => (
             <div 
               key={num} 
               onClick={() => setSelectedContact(num)}
-              className="p-4 flex items-center gap-3 cursor-pointer border-b border-zinc-900 hover:bg-zinc-900 transition-colors"
+              className="p-4 flex items-center gap-3 cursor-pointer border-b border-zinc-900 hover:bg-zinc-800 transition-colors"
             >
               <ChatBubbleAvatar fallback={String(num).slice(-2)} className="h-12 w-12 border border-zinc-700" />
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-base truncate">{num}</p>
-                <p className="text-xs text-green-500">Online</p>
+              <div className="min-w-0">
+                <p className="font-semibold text-sm truncate">{num}</p>
+                <p className="text-[10px] text-green-500">Active</p>
               </div>
             </div>
           ))}
@@ -80,13 +80,9 @@ export default function ChatFlowPage() {
               <button onClick={() => setSelectedContact(null)} className="md:hidden">
                 <ChevronLeft className="w-6 h-6 text-zinc-400" />
               </button>
-              <div className="flex flex-col">
-                <span className="font-bold text-sm">{selectedContact}</span>
-                <span className="text-[10px] text-zinc-500">WhatsApp Business</span>
-              </div>
+              <span className="font-bold text-sm tracking-wide">{selectedContact}</span>
             </div>
 
-            {/* Message List area - Fixes the 'cutting' issue */}
             <div className="flex-1 overflow-y-auto">
               <ChatMessageList className="p-4 space-y-6">
                 {filteredMessages.map((msg) => (
@@ -100,14 +96,14 @@ export default function ChatFlowPage() {
               </ChatMessageList>
             </div>
 
-            {/* Professional Chatwood-style Input Bar */}
+            {/* Input - Safe from cutting */}
             <div className="p-4 bg-zinc-950 border-t border-zinc-800">
-              <div className="flex items-center gap-2 bg-zinc-900 rounded-full px-4 py-2 border border-zinc-800">
-                <button className="text-blue-500 hover:text-white"><Blocks className="w-5 h-5" /></button>
-                <button className="text-green-500 hover:text-white"><MessageSquarePlus className="w-5 h-5" /></button>
+              <div className="flex items-center gap-2 bg-zinc-900 rounded-full px-4 py-2 border border-zinc-800 focus-within:border-zinc-700 transition-all">
+                <button className="text-blue-500"><Blocks className="w-5 h-5" /></button>
+                <button className="text-green-500"><MessageSquarePlus className="w-5 h-5" /></button>
                 <input 
                   className="bg-transparent flex-1 outline-none text-sm p-1 text-white"
-                  placeholder="Type a message..."
+                  placeholder="Type message..."
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }}
@@ -119,7 +115,7 @@ export default function ChatFlowPage() {
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center text-zinc-600">
-            <p className="text-sm font-medium">Select a conversation to start chatting</p>
+            <p className="text-sm font-medium">Select a conversation to start</p>
           </div>
         )}
       </div>
