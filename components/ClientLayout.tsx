@@ -38,15 +38,16 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
                     <div className="hidden md:block">
                         <Sidebar />
                     </div>
-                    <BottomNav />
+                    {/* Chat page par BottomNav HATANA hai */}
+                    {!isChatPage && <BottomNav />}
                 </>
             )}
             <main
                 className={cn(
                     "min-h-screen transition-all duration-300",
                     !isLoginPage && isAuth ? "md:ml-64" : "",
-                    // Chat page par padding HATANI hai
-                    !isChatPage && !isLoginPage && isAuth ? "p-4 md:p-8" : ""
+                    // Chat page par koi bottom padding nahi chahiye ab
+                    !isChatPage && !isLoginPage && isAuth ? "p-4 md:p-8 pb-24 md:pb-8" : "p-0"
                 )}
             >
                 {children}
