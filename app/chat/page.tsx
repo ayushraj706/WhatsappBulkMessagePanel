@@ -1,29 +1,23 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
-import { ChatBubble, ChatBubbleMessage } from "@/components/ui/chat/chat-bubble";
-import { ChatMessageList } from "@/components/ui/chat/chat-message-list";
-import { cn } from "@/lib/utils";
 
-// 1. Customized Gradient Icon Component (Target screenshot ke liye)
-const ChatListHeaderIcon = () => (
-  <div className="w-12 h-12 rounded-xl flex items-center justify-center p-0.5 border border-zinc-700 shadow-inner relative overflow-hidden flex-shrink-0">
-    {/* Complex Gradient Pattern Background */}
-    <div className="absolute inset-0 bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600 opacity-80" />
-    <div className="absolute inset-0 bg-black/10 backdrop-blur-[1px]" />
-    {/* Inner stylized Chat SVG */}
-    <svg viewBox="0 0 100 100" className="w-8 h-8 relative z-10 text-white drop-shadow-md">
-      <path fill="currentColor" d="M20,30 Q20,20 30,20 H70 Q80,20 80,30 V60 Q80,70 70,70 H40 L20,90 V70 Q20,70 20,60 Z"/>
-    </svg>
-  </div>
-);
+[span_14](start_span)[span_15](start_span)[span_16](start_span)[span_17](start_span)[span_18](start_span)[span_19](start_span)// AAPKI BHEJI HUI 8 FILES KA SAHI ISTEMAL[span_14](end_span)[span_15](end_span)[span_16](end_span)[span_17](end_span)[span_18](end_span)[span_19](end_span)
+import { 
+  ChatBubble, 
+  ChatBubbleAvatar, 
+  ChatBubbleMessage, 
+  ChatBubbleTimestamp 
+} from "@/components/ui/chat/chat-bubble";
+import { ChatMessageList } from "@/components/ui/chat/chat-message-list";
+import { ChatInput } from "@/components/ui/chat/chat-input";
+import { cn } from "@/lib/utils";
 
 export default function InstagramStyleChat() {
   const [messages, setMessages] = useState<any[]>([]);
   const [inputText, setInputText] = useState("");
   const [selectedContact, setSelectedContact] = useState<string | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const q = query(collection(db, "chats"), orderBy("timestamp", "asc"));
@@ -32,12 +26,6 @@ export default function InstagramStyleChat() {
     });
     return () => unsubscribe();
   }, []);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages, selectedContact]);
 
   const contacts = Array.from(new Set(messages.map(m => m.sender))).filter(s => s !== "Me");
   const filteredMessages = messages.filter(m => 
@@ -65,17 +53,13 @@ export default function InstagramStyleChat() {
   };
 
   return (
-    // ml-64 tabhi rakhna agar main sidebar (WaBulk) 'fixed' hai
-    <div className="flex h-screen bg-black ml-64 text-white w-full overflow-hidden">
+    <div className="flex h-screen bg-black text-white w-full overflow-hidden">
       
-      {/* 1. Sleek Compact Sidebar (Target Style) */}
+      {/* 1. Sidebar - Sleek & Compact */}
       <div className="w-72 border-r border-zinc-800 flex flex-col flex-shrink-0 bg-black">
-        <div className="p-4 border-b border-zinc-800 flex items-center gap-3">
-          <ChatListHeaderIcon /> {/* Customized gradient icon */}
-          <div>
-            <h1 className="text-lg font-bold tracking-tight">Messages</h1>
-            <p className="text-xs text-zinc-500">Live WhatsApp Chat</p>
-          </div>
+        <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+          <h1 className="text-lg font-bold tracking-tight">Messages</h1>
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
         </div>
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           {contacts.map((num) => (
@@ -87,60 +71,56 @@ export default function InstagramStyleChat() {
                 selectedContact === num ? "bg-zinc-800" : "hover:bg-zinc-900"
               )}
             >
-              {/* Professional Avatar with Number Slice */}
-              <div className="w-11 h-11 bg-zinc-700 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold border border-zinc-700">
-                {num.toString().slice(-2)}
-              </div>
-              <div className="flex-1 min-w-0">
+              [span_20](start_span)<ChatBubbleAvatar fallback={num.toString().slice(-2)} className="h-10 w-10 border border-zinc-700" />[span_20](end_span)
+              <div className="min-w-0">
                 <p className="font-semibold text-sm truncate">{num}</p>
-                <p className="text-[11px] text-green-500 truncate font-medium">Online</p>
+                <p className="text-[10px] text-zinc-500 truncate">Tap to open chat</p>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* 2. Chat Area */}
-      <div className="flex-1 flex flex-col bg-black">
+      {/* 2. Main Chat Area */}
+      <div className="flex-1 flex flex-col bg-[#050505]">
         {selectedContact ? (
           <>
-            <div className="p-4 border-b border-zinc-800 flex items-center gap-3 bg-black/40 backdrop-blur-md">
+            <div className="p-4 border-b border-zinc-800 bg-black/40 backdrop-blur-md flex items-center gap-3">
               <span className="font-bold text-sm tracking-wide">{selectedContact}</span>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-3 custom-scrollbar" ref={scrollRef}>
-              <ChatMessageList>
-                {filteredMessages.map((msg) => (
-                  <ChatBubble key={msg.id} variant={msg.type === "sent" ? "sent" : "received"}>
-                    {/* Yahan maine bubbles ko Force kiya hai colors aur shape ke saath directly Tailwind Classes mein! */}
-                    <ChatBubbleMessage 
-                       className={cn(
-                         "text-sm tracking-tight",
-                         // FORCE BLUE & ZINC (Target design colors)
-                         msg.type === "sent" ? "bg-blue-600 text-white" : "bg-zinc-800 text-white"
-                       )}
-                       variant={msg.type === "sent" ? "sent" : "received"}
-                    >
-                      {msg.text}
-                    </ChatBubbleMessage>
-                  </ChatBubble>
-                ))}
-              </ChatMessageList>
-            </div>
+            [span_21](start_span){/* ChatMessageList handles the Scroll logic from useAutoScroll[span_21](end_span) */}
+            <ChatMessageList className="flex-1 p-4 space-y-6">
+              {filteredMessages.map((msg) => (
+                [span_22](start_span)[span_23](start_span)<ChatBubble key={msg.id} variant={msg.type === "sent" ? "sent" : "received"}>[span_22](end_span)[span_23](end_span)
+                  <ChatBubbleAvatar 
+                    fallback={msg.type === "sent" ? "ME" : msg.sender.slice(-2)} 
+                    className="h-8 w-8"
+                  [span_24](start_span)/>[span_24](end_span)
+                  <ChatBubbleMessage variant={msg.type === "sent" ? [span_25](start_span)"sent" : "received"}>[span_25](end_span)
+                    {msg.text}
+                    [span_26](start_span){/* Timestamp for professional feel[span_26](end_span) */}
+                    <ChatBubbleTimestamp 
+                      timestamp={msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "..."} 
+                    />
+                  </ChatBubbleMessage>
+                </ChatBubble>
+              ))}
+            </ChatMessageList>
 
-            {/* INTEGRATED PILL-SHAPED INPUT BOX (Target sleek design) */}
+            [span_27](start_span){/* Integrated Pill Input[span_27](end_span) */}
             <div className="p-4 border-t border-zinc-800 bg-black">
-              <div className="flex items-center bg-zinc-900 rounded-full px-5 py-2.5 border border-zinc-800 focus-within:border-zinc-600 transition-all shadow-inner">
-                <input 
-                  className="bg-transparent flex-1 outline-none text-sm p-1 text-white placeholder:text-zinc-600"
-                  placeholder="Message..."
+              <div className="flex items-center gap-2 bg-zinc-900 rounded-full px-4 py-1 border border-zinc-800 focus-within:border-zinc-700">
+                <ChatInput 
+                  placeholder="Type a message..."
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }}
-                />
+                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }}}
+                  className="border-none bg-transparent focus-visible:ring-0 min-h-0 h-10 py-2" 
+                [span_28](start_span)/>[span_28](end_span)
                 <button 
                   onClick={handleSend}
-                  className="text-blue-500 font-bold text-sm px-3 hover:text-white transition-colors"
+                  className="text-blue-500 font-bold text-sm px-2 hover:text-white transition-colors"
                 >
                   Send
                 </button>
@@ -149,10 +129,7 @@ export default function InstagramStyleChat() {
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-zinc-600">
-             <div className="w-20 h-20 bg-zinc-900 rounded-full flex items-center justify-center mb-5 border border-zinc-800">
-                 <span className="text-3xl">✉️</span>
-             </div>
-             <p className="text-sm font-medium">Select a chat to start messaging</p>
+             <p className="text-sm font-medium">Select a contact to view messages</p>
           </div>
         )}
       </div>
