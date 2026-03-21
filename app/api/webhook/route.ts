@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase"; 
 import { collection, query, where, getDocs, updateDoc, doc, addDoc, serverTimestamp } from "firebase/firestore";
-import webpush from 'web-push'; // Pehle 'npm install web-push' karein
+import webpush from 'web-push';
 
-// VAPID Setup (Environment Variables se aayega)
+// VAPID Setup
 webpush.setVapidDetails(
   'mailto:support@yourdomain.com',
   process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
@@ -27,6 +27,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const value = body.entry?.[0]?.changes?.[0]?.value;
 
+    // A. Status Update Logic
     const statusUpdate = value?.statuses?.[0];
     if (statusUpdate) {
       const metaId = statusUpdate.id;
@@ -39,6 +40,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ status: "success" });
     }
 
+    // B. Incoming Message Logic
     const message = value?.messages?.[0];
     const contact = value?.contacts?.[0];
 
@@ -58,8 +60,9 @@ export async function POST(req: Request) {
         status: "read"
       });
 
-      // 2. REAL-TIME PUSH NOTIFICATION TRIGGER
+      // 2. REAL-TIME PUSH NOTIFICATION TRIGGER (With Safety Fix)
       const subsSnapshot = await getDocs(collection(db, "subscriptions"));
+      
       const payload = JSON.stringify({
         title: contact?.profile?.name || message.from,
         body: content,
@@ -67,14 +70,37 @@ export async function POST(req: Request) {
         senderId: message.from
       });
 
+      // Har subscription ko check karke bhejo
       subsSnapshot.forEach((subscriptionDoc) => {
-        webpush.sendNotification(subscriptionDoc.data() as any, payload)
-          .catch(err => console.error("Notification Error:", err));
+        const subData = subscriptionDoc.data();
+
+        // FIX: Agar endpoint nahi hai toh skip karo taaki server crash na ho
+        if (!subData || !subData.endpoint) {
+            console.error("LOG: Missing endpoint for sub:", subscriptionDoc.id);
+            return;
+        }
+
+        // Webpush ko wahi format chahiye jo browser deta hai
+        const pushSubscription = {
+            endpoint: subData.endpoint,
+            keys: {
+                auth: subData.keys?.auth,
+                p256dh: subData.keys?.p256dh
+            }
+        };
+
+        webpush.sendNotification(pushSubscription as any, payload)
+          .then(() => console.log("LOG: Push Sent to", subscriptionDoc.id))
+          .catch(err => {
+              console.error("LOG: Push Error for", subscriptionDoc.id, err.statusCode);
+              // Agar user ne app delete kar di hai (410), toh database se hata do (optional)
+          });
       });
     }
 
     return NextResponse.json({ status: "success" });
-  } catch (error) {
+  } catch (error: any) {
+    console.error("LOG: Webhook Error:", error.message);
     return NextResponse.json({ status: "error" }, { status: 500 });
   }
 }
