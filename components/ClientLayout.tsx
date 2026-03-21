@@ -26,18 +26,36 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         };
         checkAuth();
 
-        // --- ASALI PUSH NOTIFICATION & APP LOGIC ---
+        // --- REAL-TIME PUSH NOTIFICATION SYSTEM ---
         if ('serviceWorker' in navigator && 'PushManager' in window) {
-            navigator.serviceWorker.register('/sw.js') //
-              .then(reg => {
-                console.log('PWA: App Service Worker Ready!');
+            navigator.serviceWorker.register('/sw.js').then(async (reg) => {
+                console.log('PWA: Service Worker Active');
                 
-                // User se Notification bhejnewali permission maangna
+                // 1. Permission Check
                 if (Notification.permission === 'default') {
-                  Notification.requestPermission();
+                    await Notification.requestPermission();
                 }
-              })
-              .catch(err => console.error('PWA Registration Fail:', err));
+
+                // 2. Subscription (Token) Lena
+                try {
+                    let sub = await reg.pushManager.getSubscription();
+                    if (!sub && Notification.permission === 'granted') {
+                        sub = await reg.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY // Vercel se aayega
+                        });
+                    }
+
+                    if (sub) {
+                        // Token ko server par save karo
+                        await fetch('/api/push/subscribe', {
+                            method: 'POST',
+                            body: JSON.stringify(sub),
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                    }
+                } catch (e) { console.error("Push Error:", e); }
+            });
         }
     }, [pathname, router]);
 
