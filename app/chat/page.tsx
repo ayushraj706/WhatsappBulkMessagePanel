@@ -6,7 +6,7 @@ import { ChatBubble, ChatBubbleMessage, ChatBubbleAvatar, ChatBubbleTimestamp } 
 import { ChatMessageList } from "@/components/ui/chat/chat-message-list";
 import { 
   Camera, Image as ImageIcon, Paperclip, MessageSquare, 
-  Mic, Heart, Send, Smile, ChevronLeft 
+  Mic, Heart, Send, Smile, ChevronLeft, ChevronRight // Naya icon
 } from "lucide-react"; 
 import { ChatInput } from "@/components/ui/chat/chat-input";
 import { cn } from "@/lib/utils";
@@ -16,7 +16,8 @@ export default function MessengerStyleChat() {
   const [inputText, setInputText] = useState("");
   const [selectedContact, setSelectedContact] = useState<string | null>(null);
   
-  // 1. Recording States
+  // 1. New States (Focus & Recording)
+  const [isInputFocused, setIsInputFocused] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -37,6 +38,7 @@ export default function MessengerStyleChat() {
     if (!textToSend.trim() || !selectedContact) return;
     
     setInputText("");
+    setIsInputFocused(false); // Send ke baad icons wapas
     try {
       await addDoc(collection(db, "chats"), {
         text: textToSend, sender: "Me", receiver: selectedContact, type: "sent", timestamp: serverTimestamp(),
@@ -58,10 +60,7 @@ export default function MessengerStyleChat() {
       mediaRecorder.current = new MediaRecorder(stream);
       mediaRecorder.current.start();
       setIsRecording(true);
-      console.log("Recording started...");
-    } catch (err) {
-      console.error("Microphone access denied:", err);
-    }
+    } catch (err) { console.error("Mic error:", err); }
   };
 
   const stopRecording = () => {
@@ -69,22 +68,17 @@ export default function MessengerStyleChat() {
       mediaRecorder.current.stop();
       setIsRecording(false);
       mediaRecorder.current.ondataavailable = async (e) => {
-        const audioBlob = e.data;
-        console.log("Audio file ready for Cloudinary!");
-        // Agle step mein yahan Cloudinary upload jodinge
+        console.log("Audio ready for Cloudinary!");
       };
-      console.log("Recording stopped.");
     }
   };
 
   return (
     <div className="flex h-full w-full max-w-full bg-black text-white overflow-hidden overflow-x-hidden">
       
-      {/* 1. Sidebar */}
+      {/* Sidebar Section */}
       <div className={cn("w-full md:w-80 border-r border-zinc-800 flex flex-col bg-black shrink-0", selectedContact ? "hidden md:flex" : "flex")}>
-        <div className="p-4 border-b border-zinc-800 bg-black z-10 shrink-0">
-          <h1 className="text-xl font-bold">Messages</h1>
-        </div>
+        <div className="p-4 border-b border-zinc-800 shrink-0"><h1 className="text-xl font-bold">Messages</h1></div>
         <div className="flex-1 overflow-y-auto">
           {contacts.map((num) => (
             <div key={num} onClick={() => setSelectedContact(num)} className="p-4 flex items-center gap-3 cursor-pointer border-b border-zinc-900 hover:bg-zinc-800 transition-colors">
@@ -95,7 +89,7 @@ export default function MessengerStyleChat() {
         </div>
       </div>
 
-      {/* 2. Chat Window */}
+      {/* Chat Window Section */}
       <div className={cn("flex-1 flex flex-col bg-black relative min-h-0 w-full max-w-full", !selectedContact ? "hidden md:flex" : "flex")}>
         {selectedContact ? (
           <>
@@ -108,61 +102,70 @@ export default function MessengerStyleChat() {
             </div>
 
             <div className="flex-1 overflow-y-auto w-full relative">
+              {/* pr-6 to stop cutting */}
               <ChatMessageList className="p-4 pr-6 space-y-6 min-h-full">
                 {filteredMessages.map((msg) => (
                   <ChatBubble key={msg.id} variant={msg.type === "sent" ? "sent" : "received"}>
                     <ChatBubbleMessage className={msg.type === "sent" ? "bg-blue-600" : "bg-zinc-800"}>
                       {msg.text}
-                      <ChatBubbleTimestamp timestamp="Just now" className="text-[10px] opacity-50" />
+                      <ChatBubbleTimestamp timestamp="Just now" className="text-[10px] mt-1 opacity-50" />
                     </ChatBubbleMessage>
                   </ChatBubble>
                 ))}
               </ChatMessageList>
             </div>
 
-            {/* SLEEK INPUT BAR WITH FUNCTIONAL BUTTONS */}
+            {/* INTERACTIVE MESSENGER INPUT BAR */}
             <div className="pb-6 pt-2 pl-0 pr-6 bg-black border-t border-zinc-900 shrink-0 z-40 w-full">
-              <div className="flex items-center gap-1 md:gap-3">
+              <div className="flex items-center gap-1 md:gap-3 transition-all duration-300">
                 
-                <div className="flex items-center gap-0.5 text-white shrink-0">
+                {/* 1. Icons - Hide on Focus */}
+                <div className={cn(
+                  "flex items-center gap-0.5 text-white transition-all duration-300 overflow-hidden shrink-0",
+                  isInputFocused ? "w-0 opacity-0 invisible" : "w-auto opacity-100 visible"
+                )}>
                   <button className="p-2 hover:bg-zinc-800 rounded-full transition"><Camera className="w-5 h-5 md:w-6 md:h-6" /></button>
                   <button className="p-2 hover:bg-zinc-800 rounded-full transition"><ImageIcon className="w-5 h-5 md:w-6 md:h-6" /></button>
                   <button className="p-2 hover:bg-zinc-800 rounded-full transition"><Paperclip className="w-5 h-5 md:w-6 md:h-6" /></button>
                   <button className="p-2 hover:bg-zinc-800 rounded-full transition"><MessageSquare className="w-5 h-5 md:w-6 md:h-6" /></button>
                   
-                  {/* FUNCTIONAL MIC: Hold to record */}
                   <button 
-                    onMouseDown={startRecording} 
-                    onMouseUp={stopRecording}
-                    onTouchStart={startRecording}
-                    onTouchEnd={stopRecording}
-                    className={cn(
-                      "p-2 rounded-full transition-all",
-                      isRecording ? "bg-red-600 text-white scale-125 animate-pulse" : "hover:bg-zinc-800 text-white"
-                    )}
+                    onMouseDown={startRecording} onMouseUp={stopRecording}
+                    className={cn("p-2 rounded-full transition-all", isRecording ? "bg-red-600 text-white animate-pulse" : "hover:bg-zinc-800 text-white")}
                   >
                     <Mic className="w-5 h-5 md:w-6 md:h-6" />
                   </button>
                 </div>
 
+                {/* 2. Expand Arrow - Show only on Focus */}
+                <button 
+                    onClick={() => setIsInputFocused(false)}
+                    className={cn(
+                        "transition-all duration-300 overflow-hidden shrink-0 hover:bg-zinc-800 rounded-full",
+                        isInputFocused ? "w-10 h-10 flex items-center justify-center opacity-100 p-2" : "w-0 h-0 opacity-0"
+                    )}
+                >
+                    <ChevronRight className="w-6 h-6 text-blue-500" />
+                </button>
+
+                {/* 3. Central Pill Input */}
                 <div className="flex-1 flex items-center bg-[#1c1c1e] rounded-full px-4 py-1 border border-transparent focus-within:border-zinc-700 transition-all ml-1">
                   <ChatInput 
                     placeholder="Aa" 
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }}
+                    onFocus={() => setIsInputFocused(true)} // Focus triggers collapse
                     className="h-10 text-white"
                   />
-                  <button className="text-zinc-400 hover:text-white p-1">
-                    <Smile className="w-5 h-5" />
-                  </button>
+                  <button className="text-zinc-400 hover:text-white p-1"><Smile className="w-5 h-5" /></button>
                 </div>
 
+                {/* 4. Right Side: Heart/Send */}
                 <div className="flex items-center min-w-[40px] justify-center shrink-0">
                   {inputText.trim().length > 0 ? (
-                    <button onClick={() => handleSend()} className="p-2 bg-blue-600 rounded-full shadow-lg transform scale-110"><Send className="w-4 h-4 text-white fill-current" /></button>
+                    <button onClick={() => handleSend()} className="p-2 bg-blue-600 rounded-full shadow-lg transform scale-110 transition-all"><Send className="w-4 h-4 text-white fill-current" /></button>
                   ) : (
-                    /* FUNCTIONAL HEART: Quick send */
                     <button onClick={sendHeart} className="p-2 text-red-500 hover:scale-125 transition-transform"><Heart className="w-6 h-6 fill-current" /></button>
                   )}
                 </div>
@@ -172,10 +175,7 @@ export default function MessengerStyleChat() {
             </div>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-zinc-600">
-             <div className="w-16 h-16 bg-zinc-900 rounded-3xl flex items-center justify-center mb-4 border border-zinc-800 shadow-xl font-bold">💬</div>
-             <p className="text-sm font-bold uppercase tracking-widest opacity-50">Select a chat to start</p>
-          </div>
+          <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 font-bold opacity-50 uppercase tracking-widest">Select a chat</div>
         )}
       </div>
     </div>
