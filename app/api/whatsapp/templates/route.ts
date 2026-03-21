@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { getTemplates } from "@/lib/whatsapp";
 
+// Zaroori Fix: Next.js build crash hone se bachane ke liye
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const accessToken = searchParams.get("accessToken");
