@@ -1,10 +1,12 @@
 import { ThemeProvider } from "@/components/ThemeProvider";
+import "./globals.css"; // Aapki css file
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
+    // 'suppressHydrationWarning' zaroori hai taaki browser gussa na kare
     <html lang="en" suppressHydrationWarning>
-      <body className="antialiased">
-        {/* Is line se pure app ko light/dark mode ka signal milta hai */}
+      <body>
+        {/* Is line ne pure app ko 'Theme' ke signal se jodd diya hai */}
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
         </ThemeProvider>
