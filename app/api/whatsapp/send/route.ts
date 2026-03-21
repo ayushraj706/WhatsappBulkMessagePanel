@@ -3,43 +3,51 @@ import { NextResponse } from "next/server";
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { to, message, type, mediaUrl, emoji } = body;
+        // Frontend se aane wale saare fields
+        const { to, message, type, imageUrl, audioUrl, emoji } = body;
 
         const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
         const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
 
+        // Base Payload structure for Meta API
         let payload: any = {
             messaging_product: "whatsapp",
             recipient_type: "individual",
             to: to,
         };
 
-        // 1. Logic for HEART (Reaction)
-        if (type === "reaction") {
-            payload.type = "reaction";
-            payload.reaction = { message_id: "", emoji: emoji || "❤️" }; 
-            // Note: Reaction ke liye purane message ki ID chahiye hoti hai, 
-            // filhal hum ise simple emoji message ki tarah bhejenge niche.
+        // --- LOGIC SWITCH BOARD ---
+
+        // 1. IMAGE LOGIC (Camera/Gallery)
+        if (type === "image") {
+            payload.type = "image";
+            payload.image = { 
+                link: imageUrl,
+                caption: message || "" // Photo ke saath agar koi text likha ho
+            };
         } 
         
-        // 2. Logic for VOICE/AUDIO
+        // 2. AUDIO/VOICE LOGIC (Microphone)
         else if (type === "audio") {
             payload.type = "audio";
-            payload.audio = { link: mediaUrl };
+            payload.audio = { link: audioUrl };
         }
 
-        // 3. Logic for IMAGE (Camera/Gallery)
-        else if (type === "image") {
-            payload.type = "image";
-            payload.image = { link: mediaUrl };
+        // 3. REACTION LOGIC (Heart/Emoji)
+        // Note: Reaction ke liye Meta 'message_id' maangta hai. 
+        // Agar ID nahi hai toh hum use simple emoji message ki tarah bhejenge.
+        else if (type === "reaction") {
+            payload.type = "text";
+            payload.text = { body: emoji || "❤️" };
         }
 
-        // 4. Default TEXT
+        // 4. DEFAULT TEXT LOGIC
         else {
             payload.type = "text";
             payload.text = { body: message };
         }
 
+        // Meta Server Request
         const response = await fetch(
             `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
             {
@@ -53,8 +61,16 @@ export async function POST(request: Request) {
         );
 
         const data = await response.json();
+
+        // Error handling for Meta response
+        if (!response.ok) {
+            console.error("Meta API Error:", data);
+            return NextResponse.json({ error: data.error?.message || "Meta API Error" }, { status: response.status });
+        }
+
         return NextResponse.json(data);
     } catch (error: any) {
+        console.error("Internal Server Error:", error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
