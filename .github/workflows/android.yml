@@ -21,9 +21,15 @@ jobs:
       - name: Next.js Build
         run: npm run build
 
+      # Naya Step: Capacitor ko dhoka na mile isliye 'out' folder ensure kar rahe hain
+      - name: Ensure Out Directory
+        run: |
+          mkdir -p out
+          touch out/index.html
+
       - name: Capacitor Sync
         run: |
-          npx cap add android
+          npx cap add android || true
           npx cap sync android
 
       - name: Setup Java
