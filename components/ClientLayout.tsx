@@ -6,7 +6,6 @@ import { isAuthenticated } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { Menu } from "lucide-react";
 
-// 'React.ObjectNode' ko badal kar 'React.ReactNode' kar diya hai
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
@@ -34,10 +33,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     if (loading) return null;
 
     return (
-        <div className="bg-black min-h-[100dvh] text-white overflow-hidden relative">
+        // 100dvh ensures nothing is cut off at the bottom
+        <div className="bg-black h-[100dvh] w-full text-white overflow-hidden flex flex-col relative">
             {!isLoginPage && isAuth && (
                 <>
-                    {/* Main App Sidebar */}
+                    {/* Main Sidebar */}
                     <div className={cn(
                         "fixed inset-y-0 left-0 z-[100] w-64 bg-black border-r border-zinc-800 transition-transform duration-300 md:translate-x-0",
                         isMainSidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -45,9 +45,9 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
                         <Sidebar onClose={() => setIsMainSidebarOpen(false)} />
                     </div>
                     
-                    {/* Global Mobile Header (Har page par dikhega) */}
-                    <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-black border-b border-zinc-800 flex items-center px-4 z-40">
-                        <button onClick={() => setIsMainSidebarOpen(true)} className="p-2 -ml-2">
+                    {/* Global Top Header */}
+                    <div className="h-14 bg-black border-b border-zinc-800 flex items-center px-4 shrink-0 z-40 md:ml-64 transition-all">
+                        <button onClick={() => setIsMainSidebarOpen(true)} className="md:hidden p-2 -ml-2">
                             <Menu className="w-6 h-6 text-zinc-400" />
                         </button>
                         <span className="ml-2 font-bold text-sm tracking-tight">BaseKey Panel</span>
@@ -61,10 +61,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             )}
 
             <main className={cn(
-                "min-h-[100dvh] transition-all duration-300",
-                !isLoginPage && isAuth ? "md:ml-64" : "",
-                !isLoginPage && isAuth ? "pt-14 md:pt-0" : "",
-                !isChatPage && !isLoginPage && isAuth ? "p-4" : "p-0"
+                "flex-1 flex flex-col min-h-0 overflow-hidden",
+                !isLoginPage && isAuth ? "md:ml-64" : ""
             )}>
                 {children}
             </main>
