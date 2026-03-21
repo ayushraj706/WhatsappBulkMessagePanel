@@ -1,11 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: 'export', // Static files export karne ke liye zaroori hai
+  output: 'export', // Ye 'out' folder banayega jo Capacitor ko chahiye
   images: {
-    unoptimized: true, // Static export mein image optimization off rakhni padti hai
+    unoptimized: true, // Static export mein image optimization off karni padti hai
   },
-  /* Baaki options yahan dalo agar hain toh */
 };
 
 export default nextConfig;
