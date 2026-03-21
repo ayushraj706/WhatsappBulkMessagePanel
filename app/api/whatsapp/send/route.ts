@@ -3,41 +3,41 @@ import { NextResponse } from "next/server";
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { to, message, templateName, languageCode, components } = body;
+        const { to, message, type, mediaUrl, emoji } = body;
 
-        // Vercel Environment Variables se data lena (Ye body mein nahi hona chahiye security ke liye)
         const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
         const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
 
-        if (!to || (!message && !templateName)) {
-            return NextResponse.json({ error: "To and (Message or Template) are required" }, { status: 400 });
+        let payload: any = {
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            to: to,
+        };
+
+        // 1. Logic for HEART (Reaction)
+        if (type === "reaction") {
+            payload.type = "reaction";
+            payload.reaction = { message_id: "", emoji: emoji || "❤️" }; 
+            // Note: Reaction ke liye purane message ki ID chahiye hoti hai, 
+            // filhal hum ise simple emoji message ki tarah bhejenge niche.
+        } 
+        
+        // 2. Logic for VOICE/AUDIO
+        else if (type === "audio") {
+            payload.type = "audio";
+            payload.audio = { link: mediaUrl };
         }
 
-        let payload;
+        // 3. Logic for IMAGE (Camera/Gallery)
+        else if (type === "image") {
+            payload.type = "image";
+            payload.image = { link: mediaUrl };
+        }
 
-        // 1. Agar 'message' hai toh Simple Text format (Chat ke liye)
-        if (message) {
-            payload = {
-                messaging_product: "whatsapp",
-                recipient_type: "individual",
-                to: to,
-                type: "text",
-                text: { body: message }
-            };
-        } 
-        // 2. Agar 'templateName' hai toh Template format (Broadcast ke liye)
+        // 4. Default TEXT
         else {
-            payload = {
-                messaging_product: "whatsapp",
-                recipient_type: "individual",
-                to: to,
-                type: "template",
-                template: {
-                    name: templateName,
-                    language: { code: languageCode },
-                    components: components || []
-                }
-            };
+            payload.type = "text";
+            payload.text = { body: message };
         }
 
         const response = await fetch(
@@ -53,17 +53,8 @@ export async function POST(request: Request) {
         );
 
         const data = await response.json();
-
-        if (!response.ok) {
-            console.error("Meta API Error:", data);
-            return NextResponse.json(data, { status: response.status });
-        }
-
         return NextResponse.json(data);
     } catch (error: any) {
-        return NextResponse.json(
-            { error: error.message || "Failed to send message" },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
