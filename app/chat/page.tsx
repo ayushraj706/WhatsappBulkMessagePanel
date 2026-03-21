@@ -11,7 +11,7 @@ import {
 import { ChatInput } from "@/components/ui/chat/chat-input";
 import { cn } from "@/lib/utils";
 
-// PREMIUM BOLD ICONS (Solid Messenger Style)
+// PREMIUM BOLD ICONS
 const MessengerSmile = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
     <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zM9 13a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm6 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm-3 5.5c-2.33 0-4.31-1.46-5.11-3.5h10.22c-.8 2.04-2.78 3.5-5.11 3.5z" />
@@ -24,14 +24,15 @@ const MessengerHeart = ({ className }: { className?: string }) => (
   </svg>
 );
 
-export default function LongInputMessengerChat() {
+export default function MediaMessengerChat() {
   const [messages, setMessages] = useState<any[]>([]);
   const [inputText, setInputText] = useState("");
   const [selectedContact, setSelectedContact] = useState<string | null>(null);
-  
-  // Logic States: Icons visibility control
   const [showIcons, setShowIcons] = useState(true);
+  const [isUploading, setIsUploading] = useState(false); // Upload loading state
+
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null); // Hidden input ref
 
   useEffect(() => {
     const q = query(collection(db, "chats"), orderBy("timestamp", "asc"));
@@ -41,12 +42,16 @@ export default function LongInputMessengerChat() {
     return () => unsubscribe();
   }, []);
 
-  // Send Logic
+  useEffect(() => {
+    if (inputText.length > 0) setShowIcons(false);
+    else setShowIcons(true);
+  }, [inputText]);
+
+  // TEXT SEND LOGIC
   const handleSend = async (customText?: string) => {
     const textToSend = customText || inputText;
     if (!textToSend.trim() || !selectedContact) return;
     setInputText("");
-    setShowIcons(true); // Send ke baad icons wapas
     try {
       await addDoc(collection(db, "chats"), {
         text: textToSend, sender: "Me", receiver: selectedContact, type: "sent", timestamp: serverTimestamp(),
@@ -54,18 +59,37 @@ export default function LongInputMessengerChat() {
     } catch (err) { console.error(err); }
   };
 
-  // Typing change par icons handle karna
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const val = e.target.value;
-    setInputText(val);
-    if (val.length > 0) {
-      setShowIcons(false);
-    } else {
-      setShowIcons(true);
+  // MEDIA UPLOAD LOGIC (Cloudinary)
+  const handleFileAction = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedContact) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+
+      if (data.url) {
+        await addDoc(collection(db, "chats"), {
+          text: "", // Text khali rakhein
+          imageUrl: data.url, // Photo ka Cloudinary link
+          sender: "Me",
+          receiver: selectedContact,
+          type: "sent",
+          timestamp: serverTimestamp(),
+        });
+      }
+    } catch (err) {
+      alert("Photo upload fail ho gaya bhai!");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = ""; // Reset input
     }
   };
 
-  // Teer (Arrow) Logic: Keyboard on rakhte hue icons toggle
   const toggleIconsManually = (e: React.MouseEvent) => {
     e.preventDefault(); 
     setShowIcons(!showIcons);
@@ -80,7 +104,7 @@ export default function LongInputMessengerChat() {
         "w-full md:w-80 border-r border-zinc-200 dark:border-zinc-900 flex flex-col bg-white dark:bg-[#050505] shrink-0",
         selectedContact ? "hidden md:flex" : "flex"
       )}>
-        <div className="p-4 border-b border-zinc-200 dark:border-zinc-900 shrink-0 font-bold">Messages</div>
+        <div className="p-4 border-b border-zinc-200 dark:border-zinc-900 shrink-0 font-bold tracking-tight">Messages</div>
         <div className="flex-1 overflow-y-auto">
           {Array.from(new Set(messages.map(m => m.sender))).filter(s => s !== "Me").map((num) => (
             <div key={num} onClick={() => setSelectedContact(num)} className="p-4 flex items-center gap-3 cursor-pointer border-b border-zinc-100 dark:border-zinc-900/50 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
@@ -95,7 +119,7 @@ export default function LongInputMessengerChat() {
       <div className={cn("flex-1 flex flex-col bg-white dark:bg-[#050505] relative w-full", !selectedContact ? "hidden md:flex" : "flex")}>
         {selectedContact ? (
           <>
-            <div className="h-14 border-b border-zinc-200 dark:border-zinc-900 bg-white/95 dark:bg-[#050505]/95 backdrop-blur-md flex items-center gap-3 px-4 shrink-0 z-40 w-full">
+            <div className="h-14 border-b border-zinc-200 dark:border-zinc-900 bg-white/95 dark:bg-[#050505]/95 backdrop-blur-md flex items-center gap-3 px-4 shrink-0 z-40 w-full transition-colors">
               <button onClick={() => setSelectedContact(null)} className="md:hidden">
                 <ChevronLeft className="w-6 h-6 text-black dark:text-white" />
               </button>
@@ -107,32 +131,72 @@ export default function LongInputMessengerChat() {
                 {messages.filter(m => (m.sender === selectedContact) || (m.type === "sent" && m.receiver === selectedContact)).map((msg) => (
                   <ChatBubble key={msg.id} variant={msg.type === "sent" ? "sent" : "received"}>
                     <ChatBubbleMessage className={cn(
-                        "text-[15px] px-4 py-2.5 rounded-2xl",
+                        "text-[15px] px-4 py-2.5 rounded-2xl overflow-hidden shadow-sm",
                         msg.type === "sent" ? "bg-blue-600 text-white" : "bg-zinc-100 dark:bg-zinc-900 text-black dark:text-white border dark:border-zinc-800/50"
                     )}>
-                      {msg.text}
+                      {/* IMAGE RENDERING LOGIC */}
+                      {msg.imageUrl ? (
+                        <div className="relative group -mx-2 -my-1">
+                          <img 
+                            src={msg.imageUrl} 
+                            alt="media" 
+                            className="rounded-lg max-w-[200px] md:max-w-[300px] h-auto cursor-pointer hover:opacity-90 transition-opacity" 
+                            onClick={() => window.open(msg.imageUrl, '_blank')}
+                          />
+                        </div>
+                      ) : (
+                        msg.text
+                      )}
+                      <ChatBubbleTimestamp timestamp="Just now" className="text-[9px] mt-1 opacity-50 block" />
                     </ChatBubbleMessage>
                   </ChatBubble>
                 ))}
+                {isUploading && <div className="text-[10px] text-zinc-500 animate-pulse italic">Sending photo...</div>}
               </ChatMessageList>
             </div>
 
-            {/* LAMBA INPUT BAR: pl-2 aur gaps kam kiye hain */}
-            <div className="pb-8 pt-2 pl-2 pr-4 bg-white dark:bg-[#050505] border-t border-zinc-200 dark:border-zinc-900 shrink-0 z-40 w-full transition-all">
-              <div className="flex items-center gap-1 transition-all duration-300">
+            {/* INPUT BAR */}
+            <div className="pb-8 pt-2 pl-2 pr-4 bg-white dark:bg-[#050505] border-t border-zinc-200 dark:border-zinc-900 shrink-0 z-40 w-full">
+              <div className="flex items-center gap-1">
                 
-                {/* ICONS GROUP: Compact spacing */}
+                {/* ICONS GROUP */}
                 <div className={cn(
                   "flex items-center gap-0 text-black dark:text-white transition-all duration-300 overflow-hidden shrink-0",
                   showIcons ? "w-auto opacity-100 visible" : "w-0 opacity-0 invisible"
                 )}>
-                  <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-full"><Camera className="w-6 h-6" /></button>
-                  <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-full"><ImageIcon className="w-6 h-6" /></button>
-                  <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-full"><Paperclip className="w-6 h-6 rotate-45" /></button>
-                  <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-full"><Mic className="w-6 h-6" /></button>
+                  {/* Camera Icon - Open Camera */}
+                  <button onClick={() => {
+                    fileInputRef.current?.setAttribute('capture', 'environment');
+                    fileInputRef.current?.click();
+                  }} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-full transition-transform active:scale-90">
+                    <Camera className="w-6 h-6" />
+                  </button>
+
+                  {/* Gallery Icon - Open File Picker */}
+                  <button onClick={() => {
+                    fileInputRef.current?.removeAttribute('capture');
+                    fileInputRef.current?.click();
+                  }} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-full transition-transform active:scale-90">
+                    <ImageIcon className="w-6 h-6" />
+                  </button>
+
+                  <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-full transition-transform active:scale-90">
+                    <Paperclip className="w-6 h-6 rotate-45" />
+                  </button>
+                  <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-full transition-transform active:scale-90">
+                    <Mic className="w-6 h-6" />
+                  </button>
                 </div>
 
-                {/* THE ARROW (TEER): Space optimized */}
+                {/* Hidden File Input */}
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileAction} 
+                  className="hidden" 
+                  accept="image/*,video/*" 
+                />
+
                 <button 
                     onMouseDown={toggleIconsManually}
                     className={cn(
@@ -143,17 +207,15 @@ export default function LongInputMessengerChat() {
                     <ChevronRight className="w-7 h-7 text-blue-500" />
                 </button>
 
-                {/* PILL INPUT AREA: Space maximized on the left */}
-                <div className="flex-1 flex items-center bg-zinc-100 dark:bg-zinc-900 rounded-[22px] px-4 py-1.5 border border-transparent focus-within:border-zinc-300 dark:focus-within:border-zinc-800 transition-all shadow-inner">
+                <div className="flex-1 flex items-center bg-zinc-100 dark:bg-zinc-900 rounded-[22px] px-4 py-1.5 border border-transparent focus-within:border-zinc-300 dark:focus-within:border-zinc-800 transition-all ml-1 shadow-inner">
                   <ChatInput 
                     ref={inputRef}
                     placeholder="Aa" 
                     value={inputText}
-                    onChange={handleInputChange}
+                    onChange={(e) => setInputText(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                     className="h-10 text-black dark:text-white"
                   />
-                  {/* Emoji: Pure Solid Black Icons */}
                   <button className="text-black dark:text-zinc-400 p-1 hover:scale-110 active:scale-90 transition-transform">
                     <MessengerSmile />
                   </button>
@@ -163,7 +225,6 @@ export default function LongInputMessengerChat() {
                   {inputText.trim().length > 0 ? (
                     <button onClick={() => handleSend()} className="p-2.5 bg-blue-600 rounded-full shadow-lg transform active:scale-90 transition-all"><Send className="w-4 h-4 text-white fill-current" /></button>
                   ) : (
-                    /* HEART: Pure Black in Lite mode */
                     <button onClick={() => handleSend("❤️")} className="p-2 transition-all hover:scale-125 active:scale-90 text-black dark:text-red-500">
                       <MessengerHeart className="w-7 h-7" />
                     </button>
