@@ -3,26 +3,29 @@ import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, updateDoc, doc, addDoc, serverTimestamp } from "firebase/firestore";
 import admin from 'firebase-admin';
 
-// 1. Firebase Admin Initialization (Safe for Build Time)
+// 1. Firebase Admin Initialization (Build-Safe Version)
+// GitHub Actions mein keys nahi hoti, isliye ye check zaroori hai
 if (!admin.apps.length) {
   const projectId = process.env.FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   const privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
-  // Build ke waqt GitHub Actions ke paas ye keys nahi hoti, 
-  // isliye ye check lagana zaroori hai taaki build fail na ho
   if (projectId && clientEmail && privateKey) {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId,
-        clientEmail,
-        privateKey: privateKey.replace(/\\n/g, '\n'),
-      }),
-    });
-    console.log("Firebase Admin Initialized Successfully ✅");
+    try {
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId,
+          clientEmail,
+          privateKey: privateKey.replace(/\\n/g, '\n'), // Newline fix
+        }),
+      });
+      console.log("Firebase Admin Initialized Successfully ✅");
+    } catch (error: any) {
+      console.error("Firebase Admin Init Error:", error.message);
+    }
   } else {
-    // Ye message GitHub Actions ke logs mein dikhega
-    console.warn("Firebase Admin Keys missing (Build Time). Skipping Init... ⚠️");
+    // Ye logs GitHub build ke waqt dikhenge
+    console.warn("Firebase Admin Keys missing (Expected during Build). Skipping Init... ⚠️");
   }
 }
 
@@ -43,7 +46,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const value = body.entry?.[0]?.changes?.[0]?.value;
 
-    // --- A. TICK LOGIC (STATUS UPDATES) ---
+    // --- A. STATUS/TICK UPDATES ---
     const statusUpdate = value?.statuses?.[0];
     if (statusUpdate) {
       const metaId = statusUpdate.id;
@@ -53,8 +56,7 @@ export async function POST(req: Request) {
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        const msgDoc = querySnapshot.docs[0];
-        await updateDoc(doc(db, "chats", msgDoc.id), {
+        await updateDoc(doc(db, "chats", querySnapshot.docs[0].id), {
           status: newStatus 
         });
       }
@@ -71,6 +73,7 @@ export async function POST(req: Request) {
       else if (message.type === "image") content = "📸 Photo Received";
       else if (message.type === "audio") content = "🎤 Voice Note Received";
 
+      // 1. Message save karein
       await addDoc(collection(db, "chats"), {
         sender: message.from,
         name: contact?.profile?.name || "Unknown",
@@ -81,9 +84,10 @@ export async function POST(req: Request) {
         metaId: message.id 
       });
 
-      // FCM PUSH (Sirf tab chalega jab Firebase initialize hua ho)
+      // 2. Notification bhejien (Sirf tab jab admin initialize ho)
       if (admin.apps.length > 0) {
         const subsSnapshot = await getDocs(collection(db, "subscriptions"));
+        
         const payload = {
           notification: {
             title: contact?.profile?.name || message.from,
@@ -95,11 +99,14 @@ export async function POST(req: Request) {
           }
         };
 
+        // Saare saved devices ko notification bhejien
         subsSnapshot.forEach((subDoc) => {
           const deviceToken = subDoc.data().token;
           if (deviceToken) {
-            admin.messaging().send({ ...payload, token: deviceToken })
-              .catch(err => console.error("FCM Error:", err));
+            admin.messaging().send({
+              ...payload,
+              token: deviceToken
+            }).catch(err => console.error("FCM Send Error:", err.message));
           }
         });
       }
@@ -107,7 +114,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ status: "success" });
   } catch (error: any) {
-    console.error("LOG: Webhook Error:", error.message);
+    console.error("LOG: Critical Webhook Error:", error.message);
     return NextResponse.json({ status: "error" }, { status: 500 });
   }
 }
