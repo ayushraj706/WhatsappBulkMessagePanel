@@ -11,8 +11,9 @@ import {
 } from "lucide-react"; 
 import { ChatInput } from "@/components/ui/chat/chat-input";
 import { cn } from "@/lib/utils";
-import { useVoiceRecorder } from "@/hooks/useVoiceRecorder"; // Connecting your new file
+import { useVoiceRecorder } from "@/hooks/useVoiceRecorder";
 
+[span_8](start_span)// FIXED PREMIUM ICONS[span_8](end_span)
 const MessengerSmile = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zM9 13a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm6 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm-3 5.5c-2.33 0-4.31-1.46-5.11-3.5h10.22c-.8 2.04-2.78 3.5-5.11 3.5z" /></svg>
 );
@@ -23,7 +24,7 @@ const MessengerHeart = ({ className }: { className?: string }) => (
   </svg>
 );
 
-export default function PerfectMessengerChat() {
+export default function UltimateCleanChat() {
   const [messages, setMessages] = useState<any[]>([]);
   const [inputText, setInputText] = useState("");
   const [selectedContact, setSelectedContact] = useState<string | null>(null);
@@ -46,9 +47,9 @@ export default function PerfectMessengerChat() {
     return () => unsubscribe();
   }, []);
 
-  // Text and Media Sending Logic (Optimized)
+  [span_9](start_span)[span_10](start_span)// Text Send Logic Fixed[span_9](end_span)[span_10](end_span)
   const handleSend = async (customText?: string) => {
-    const textToSend = (typeof customText === "string") ? customText : inputText;
+    const textToSend = typeof customText === "string" ? customText : inputText;
     if ((!textToSend.trim() && !selectedFile) || !selectedContact) return;
     
     const tempPreview = previewUrl;
@@ -95,13 +96,12 @@ export default function PerfectMessengerChat() {
           await updateDoc(doc(db, "chats", docRef.id), {
               imageUrl: finalMediaUrl,
               metaId: metaData.messages[0].id,
-              status: "sent" // Single Tick
+              status: "sent" 
           });
       }
-    } catch (err) { console.error("Send Error:", err); }
+    } catch (err) { console.error(err); }
   };
 
-  // Mic Upload Logic (Called by Hook)
   const uploadAudio = async (blob: Blob) => {
     if (!selectedContact) return;
     setIsUploading(true);
@@ -124,7 +124,7 @@ export default function PerfectMessengerChat() {
           await updateDoc(doc(db, "chats", docRef.id), { metaId: metaData.messages[0].id, status: "sent" });
         }
       }
-    } catch (err) { console.error("Audio Error:", err); }
+    } catch (err) { console.error(err); }
     finally { setIsUploading(false); }
   };
 
@@ -133,12 +133,12 @@ export default function PerfectMessengerChat() {
   return (
     <div className="flex h-full w-full bg-white dark:bg-[#050505] text-black dark:text-white overflow-hidden">
       
-      {/* 1. Sidebar */}
+      [span_11](start_span){/* SIDEBAR[span_11](end_span) */}
       <div className={cn("w-full md:w-80 border-r border-zinc-200 dark:border-zinc-900 flex flex-col shrink-0", selectedContact ? "hidden md:flex" : "flex")}>
-        <div className="p-4 border-b border-zinc-200 dark:border-zinc-900 font-bold text-xl tracking-tight">Messages</div>
+        <div className="p-4 border-b border-zinc-200 dark:border-zinc-900 font-bold text-xl">Messages</div>
         <div className="flex-1 overflow-y-auto">
           {Array.from(new Set(messages.map(m => m.sender))).filter(s => s !== "Me").map((num) => (
-            <div key={num} onClick={() => setSelectedContact(num)} className="p-4 flex items-center gap-3 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900 border-b dark:border-zinc-900/40">
+            <div key={num} onClick={() => setSelectedContact(num)} className="p-4 flex items-center gap-3 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900 border-b dark:border-zinc-900/40 transition-all">
               <ChatBubbleAvatar fallback={String(num).slice(-2)} className="h-12 w-12" />
               <div className="text-left font-bold text-sm">{num}</div>
             </div>
@@ -146,7 +146,7 @@ export default function PerfectMessengerChat() {
         </div>
       </div>
 
-      {/* 2. Chat Window */}
+      [span_12](start_span)[span_13](start_span){/* CHAT WINDOW[span_12](end_span)[span_13](end_span) */}
       <div className={cn("flex-1 flex flex-col relative w-full", !selectedContact ? "hidden md:flex" : "flex")}>
         {selectedContact ? (
           <>
@@ -170,18 +170,18 @@ export default function PerfectMessengerChat() {
                             src={msg.imageUrl} 
                             alt="media" 
                             className="max-w-[260px] max-h-[300px] object-cover cursor-pointer" 
-                            onClick={() => setLightboxImage(msg.imageUrl)} // FIELD VIEW TRIGGER
+                            onClick={() => setLightboxImage(msg.imageUrl)} 
                            />
                         </div>
                       )}
                       {msg.audioUrl && (
-                        <div className="p-2 min-w-[180px]">
+                        <div className="p-2 min-w-[200px]">
                            <audio controls className="w-full h-8 invert dark:invert-0"><source src={msg.audioUrl} /></audio>
                         </div>
                       )}
                       {msg.text && <p className={cn("leading-tight", msg.imageUrl && "mt-1 px-2 pb-1")}>{msg.text}</p>}
                       
-                      {/* REAL DELIVERY TICKS */}
+                      [span_14](start_span){/* REAL TICKS LOGIC[span_14](end_span) */}
                       {msg.type === "sent" && (
                         <div className="flex justify-end mt-0.5 -mr-1">
                           {msg.status === "sending" && <Clock className="w-3 h-3 opacity-60 animate-spin" />}
@@ -196,11 +196,11 @@ export default function PerfectMessengerChat() {
               </ChatMessageList>
             </div>
 
-            {/* INPUT BAR AREA */}
+            [span_15](start_span)[span_16](start_span){/* INPUT BAR[span_15](end_span)[span_16](end_span) */}
             <div className="pb-8 pt-2 px-4 bg-white dark:bg-[#050505] border-t border-zinc-200 dark:border-zinc-900 shrink-0 z-40 w-full transition-all">
               {previewUrl && (
-                <div className="flex items-center gap-2 mb-3 relative w-fit">
-                   <img src={previewUrl} alt="preview" className="w-16 h-16 rounded-xl object-cover border-2 border-blue-500 shadow-xl" />
+                <div className="flex items-center gap-2 mb-3 relative w-fit scale-in-center">
+                   <img src={previewUrl} alt="preview" className="w-20 h-20 rounded-xl object-cover border-2 border-blue-500 shadow-xl" />
                    <button onClick={() => {setSelectedFile(null); setPreviewUrl(null); setShowIcons(true);}} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"><X className="w-3 h-3"/></button>
                 </div>
               )}
@@ -217,16 +217,16 @@ export default function PerfectMessengerChat() {
 
                 {isRecording ? (
                   <div className="flex-1 flex items-center justify-between bg-red-50 dark:bg-red-950/20 px-4 py-2 rounded-full border border-red-200 dark:border-red-900/50">
-                    <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 bg-red-600 rounded-full animate-ping" /><span className="text-red-600 font-mono font-bold text-sm">{(recordingSeconds)}s</span></div>
+                    <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 bg-red-600 rounded-full animate-ping" /><span className="text-red-600 font-mono font-bold text-sm">{recordingSeconds}s</span></div>
                     <button onClick={stopRecording} className="text-red-600 font-bold text-xs uppercase">STOP</button>
                   </div>
                 ) : (
-                  <div className="flex-1 flex items-center bg-zinc-100 dark:bg-zinc-900 rounded-[28px] px-2 py-1.5 focus-within:ring-1 ring-zinc-300 dark:ring-zinc-800 transition-all">
-                    {/* PLUS ICON */}
+                  <div className="flex-1 flex items-center bg-zinc-100 dark:bg-zinc-900 rounded-[28px] px-4 py-1.5 focus-within:ring-1 ring-zinc-300 dark:ring-zinc-800 transition-all ml-1">
+                    {/* PLUS ICON ADDED */}
                     <button className="p-2 text-zinc-500 hover:text-zinc-800 dark:hover:text-white transition-colors">
                         <Plus className="w-6 h-6" />
                     </button>
-                    <ChatInput ref={inputRef} placeholder="Aa" value={inputText} onChange={(e) => { setInputText(e.target.value); setShowIcons(e.target.value.length === 0); }} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }} className="h-10 text-black dark:text-white" />
+                    <ChatInput ref={inputRef} placeholder="Aa" value={inputText} onChange={(e) => { setInputText(e.target.value); if (e.target.value.length > 0) setShowIcons(false); else if (!previewUrl) setShowIcons(true); }} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }} className="h-10 text-black dark:text-white" />
                     <button className="text-zinc-500 p-1.5 hover:scale-110 active:scale-90 transition-transform"><MessengerSmile /></button>
                   </div>
                 )}
@@ -239,7 +239,6 @@ export default function PerfectMessengerChat() {
                       ) : (
                         <div className="flex items-center">
                             <button onClick={startRecording} className="p-2.5 text-black dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-full transition-all"><Mic className="w-6 h-6" /></button>
-                            {/* FIXED HEART ICON */}
                             <button onClick={() => handleSend("❤️")} className="p-2.5 transition-all text-black dark:text-red-500 hover:scale-125">
                                 <MessengerHeart className="w-7 h-7" />
                             </button>
@@ -256,11 +255,11 @@ export default function PerfectMessengerChat() {
         )}
       </div>
 
-      {/* FIELD VIEW LIGHTBOX */}
+      {/* CUSTOM LIGHTBOX */}
       {lightboxImage && (
         <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-4">
            <button onClick={() => setLightboxImage(null)} className="absolute top-8 right-8 text-white p-3 rounded-full hover:bg-white/10"><X className="w-10 h-10" /></button>
-           <img src={lightboxImage} alt="Fullscreen" className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl" />
+           <img src={lightboxImage} alt="Fullscreen" className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl scale-in-center" />
            <p className="mt-6 text-white/50 font-bold tracking-widest text-xs uppercase">BaseKey Viewer</p>
         </div>
       )}
