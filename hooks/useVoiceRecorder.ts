@@ -1,51 +1,41 @@
-// hooks/useVoiceRecorder.ts
+"use client";
 import { useState, useRef } from "react";
 
-export const useVoiceRecorder = () => {
+export const useVoiceRecorder = (onStop: (blob: Blob) => void) => {
   const [isRecording, setIsRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
-  const timerInterval = useRef<NodeJS.Timeout | null>(null);
+  const audioChunks = useRef<Blob[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder.current = new MediaRecorder(stream);
-      const chunks: Blob[] = [];
+      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+      mediaRecorder.current = recorder;
+      audioChunks.current = [];
 
-      mediaRecorder.current.ondataavailable = (e) => chunks.push(e.data);
-      
-      mediaRecorder.current.onstop = async () => {
-        const audioBlob = new Blob(chunks, { type: "audio/ogg; codecs=opus" });
-        // Ye blob hum upload function ko bhejenge
-        const event = new CustomEvent("voice-ready", { detail: audioBlob });
-        window.dispatchEvent(event);
+      recorder.ondataavailable = (e) => audioChunks.current.push(e.data);
+      recorder.onstop = () => {
+        const audioBlob = new Blob(audioChunks.current, { type: 'audio/ogg' });
+        onStop(audioBlob);
+        stream.getTracks().forEach(t => t.stop());
       };
 
-      mediaRecorder.current.start();
+      recorder.start();
       setIsRecording(true);
-      setRecordingTime(0);
-      timerInterval.current = setInterval(() => {
-        setRecordingTime((prev) => prev + 1);
-      }, 1000);
-    } catch (err) {
-      alert("Mic permission nahi mili bhai!");
-    }
+      setRecordingSeconds(0);
+      timerRef.current = setInterval(() => setRecordingSeconds(s => s + 1), 1000);
+    } catch (err) { alert("Mic permission needed!"); }
   };
 
   const stopRecording = () => {
     if (mediaRecorder.current && isRecording) {
       mediaRecorder.current.stop();
       setIsRecording(false);
-      if (timerInterval.current) clearInterval(timerInterval.current);
+      if (timerRef.current) clearInterval(timerRef.current);
     }
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  return { isRecording, recordingTime: formatTime(recordingTime), startRecording, stopRecording };
+  return { isRecording, recordingSeconds, startRecording, stopRecording };
 };
