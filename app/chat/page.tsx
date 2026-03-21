@@ -16,7 +16,7 @@ const MessengerSmile = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zM9 13a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm6 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm-3 5.5c-2.33 0-4.31-1.46-5.11-3.5h10.22c-.8 2.04-2.78 3.5-5.11 3.5z" /></svg>
 );
 
-export default function FinalMessengerChat() {
+export default function PerfectMessengerChat() {
   const [messages, setMessages] = useState<any[]>([]);
   const [inputText, setInputText] = useState("");
   const [selectedContact, setSelectedContact] = useState<string | null>(null);
@@ -49,7 +49,6 @@ export default function FinalMessengerChat() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [isRecording]);
 
-  [span_12](start_span)// FIX: Build Error function define kiya[span_12](end_span)
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -66,14 +65,14 @@ export default function FinalMessengerChat() {
     const tempFile = selectedFile;
     const tempPreview = previewUrl;
 
-    // Optimistic: Clear inputs immediately
+    // Optimistic Reset
     setInputText("");
     setSelectedFile(null);
     setPreviewUrl(null);
     setShowIcons(true);
 
     try {
-      // 1. Chat mein pehle gray/sending photo dikhao
+      // 1. Firebase mein turant gray photo dikhao (Optimistic UI)
       const docRef = await addDoc(collection(db, "chats"), {
         text: textToSend,
         imageUrl: tempPreview || "",
@@ -93,7 +92,7 @@ export default function FinalMessengerChat() {
         finalMediaUrl = data.url;
       }
 
-      [span_13](start_span)// 2. WhatsApp Meta ko bhejien[span_13](end_span)
+      // 2. WhatsApp Meta API ko bhejien
       const metaRes = await fetch("/api/whatsapp/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -105,7 +104,7 @@ export default function FinalMessengerChat() {
         }),
       });
 
-      // 3. Status Update to Blue Ticks
+      // 3. Status Update to Blue Ticks (CheckCheck icon)
       await updateDoc(doc(db, "chats", docRef.id), {
         imageUrl: finalMediaUrl,
         status: metaRes.ok ? "read" : "sent"
@@ -166,8 +165,8 @@ export default function FinalMessengerChat() {
         <div className="p-4 border-b border-zinc-200 dark:border-zinc-900 font-bold text-xl">Messages</div>
         <div className="flex-1 overflow-y-auto">
           {Array.from(new Set(messages.map(m => m.sender))).filter(s => s !== "Me").map((num) => (
-            <div key={num} onClick={() => setSelectedContact(num)} className="p-4 flex items-center gap-3 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900 border-b dark:border-zinc-900/50">
-              <ChatBubbleAvatar fallback={String(num).slice(-2)} className="h-12 w-12" />
+            <div key={num} onClick={() => setSelectedContact(num)} className="p-4 flex items-center gap-3 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900 border-b dark:border-zinc-900/50 transition-colors">
+              <ChatBubbleAvatar fallback={String(num).slice(-2)} className="h-12 w-12 border-2 border-zinc-200 dark:border-zinc-800" />
               <div className="text-left font-bold text-sm">{num}</div>
             </div>
           ))}
@@ -178,12 +177,12 @@ export default function FinalMessengerChat() {
       <div className={cn("flex-1 flex flex-col relative w-full", !selectedContact ? "hidden md:flex" : "flex")}>
         {selectedContact ? (
           <>
-            <div className="h-14 border-b border-zinc-200 dark:border-zinc-900 bg-white/90 dark:bg-[#050505]/90 backdrop-blur-md flex items-center gap-3 px-4 z-40">
+            <div className="h-14 border-b border-zinc-200 dark:border-zinc-900 bg-white/90 dark:bg-[#050505]/90 backdrop-blur-md flex items-center gap-3 px-4 z-40 transition-colors">
               <button onClick={() => setSelectedContact(null)} className="md:hidden"><ChevronLeft /></button>
-              <span className="font-bold text-sm">{selectedContact}</span>
+              <span className="font-bold text-sm tracking-tight">{selectedContact}</span>
             </div>
 
-            <div className="flex-1 overflow-y-auto bg-white dark:bg-[#050505]">
+            <div className="flex-1 overflow-y-auto bg-white dark:bg-[#050505] custom-scrollbar">
               <ChatMessageList className="p-4 space-y-4 pb-24">
                 {messages.filter(m => (m.sender === selectedContact) || (m.type === "sent" && m.receiver === selectedContact)).map((msg) => (
                   <ChatBubble key={msg.id} variant={msg.type === "sent" ? "sent" : "received"}>
@@ -191,15 +190,16 @@ export default function FinalMessengerChat() {
                         "text-[15px] px-4 py-2 rounded-2xl relative",
                         msg.type === "sent" ? "bg-blue-600 text-white" : "bg-zinc-100 dark:bg-zinc-900 text-black dark:text-white"
                     )}>
+                      {/* BORDERLESS MEDIA */}
                       {msg.imageUrl && (
                         <div className={cn("mb-1 overflow-hidden rounded-xl", msg.status === "sending" && "opacity-40 grayscale")}>
-                           <img src={msg.imageUrl} alt="media" className="max-w-[240px] h-auto" />
+                           <img src={msg.imageUrl} alt="media" className="max-w-[240px] h-auto cursor-pointer" onClick={() => window.open(msg.imageUrl, '_blank')} />
                         </div>
                       )}
                       {msg.audioUrl && <audio controls className="w-48 h-8 invert dark:invert-0 my-1"><source src={msg.audioUrl} /></audio>}
                       {msg.text && <p className="leading-tight">{msg.text}</p>}
                       
-                      {/* STATUS TICKS */}
+                      {/* TICKS */}
                       {msg.type === "sent" && (
                         <div className="flex justify-end mt-0.5 -mr-1">
                           {msg.status === "sending" && <Clock className="w-3 h-3 opacity-60 animate-spin" />}
@@ -213,29 +213,29 @@ export default function FinalMessengerChat() {
               </ChatMessageList>
             </div>
 
-            <div className="pb-8 pt-2 px-4 bg-white dark:bg-[#050505] border-t border-zinc-200 dark:border-zinc-900">
+            <div className="pb-8 pt-2 px-4 bg-white dark:bg-[#050505] border-t border-zinc-200 dark:border-zinc-900 shrink-0 z-40 w-full transition-all">
               {previewUrl && (
-                <div className="flex items-center gap-2 mb-3 relative w-fit">
+                <div className="flex items-center gap-2 mb-3 relative w-fit scale-in-center">
                    <img src={previewUrl} alt="preview" className="w-16 h-16 rounded-xl object-cover border border-blue-500/30" />
-                   <button onClick={() => {setSelectedFile(null); setPreviewUrl(null);}} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"><X className="w-3 h-3"/></button>
+                   <button onClick={() => {setSelectedFile(null); setPreviewUrl(null); setShowIcons(true);}} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"><X className="w-3 h-3"/></button>
                 </div>
               )}
 
               <div className="flex items-center gap-2">
                 {!isRecording && (
                   <div className={cn("flex items-center transition-all", showIcons ? "w-auto opacity-100" : "w-0 opacity-0 invisible overflow-hidden")}>
-                    <button onClick={() => galleryRef.current?.click()} className="p-2.5 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-full transition"><ImageIcon className="w-6 h-6" /></button>
+                    <button onClick={() => galleryRef.current?.click()} className="p-2.5 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-full transition-transform active:scale-90"><ImageIcon className="w-6 h-6" /></button>
                   </div>
                 )}
                 <input type="file" ref={galleryRef} onChange={handleFileSelect} className="hidden" accept="image/*" />
 
                 {isRecording ? (
-                  <div className="flex-1 flex items-center justify-between bg-red-50 dark:bg-red-950/20 px-4 py-2 rounded-full border border-red-200 dark:border-red-900/50">
+                  <div className="flex-1 flex items-center justify-between bg-red-50 dark:bg-red-950/20 px-4 py-2 rounded-full border border-red-200 dark:border-red-900/50 animate-pulse">
                     <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 bg-red-600 rounded-full animate-ping" /><span className="text-red-600 font-mono font-bold text-sm">{recordingSeconds}s</span></div>
-                    <button onClick={() => { if (mediaRecorder.current) mediaRecorder.current.stop(); setIsRecording(false); }} className="text-red-600 font-bold text-xs"><Square className="w-4 h-4 inline mr-1" /> STOP</button>
+                    <button onClick={() => { if (mediaRecorder.current) mediaRecorder.current.stop(); setIsRecording(false); }} className="text-red-600 font-black text-xs uppercase"><Square className="w-4 h-4 inline mr-1" /> STOP</button>
                   </div>
                 ) : (
-                  <div className="flex-1 flex items-center bg-zinc-100 dark:bg-zinc-900 rounded-3xl px-4 py-1.5 ring-offset-background focus-within:ring-1 ring-zinc-300 dark:ring-zinc-800 transition-all">
+                  <div className="flex-1 flex items-center bg-zinc-100 dark:bg-zinc-900 rounded-3xl px-4 py-1.5 focus-within:ring-1 ring-zinc-300 dark:ring-zinc-800 transition-all">
                     <ChatInput ref={inputRef} placeholder="Aa" value={inputText} onChange={(e) => { setInputText(e.target.value); setShowIcons(e.target.value.length === 0); }} className="h-10 text-black dark:text-white" />
                     <button className="text-zinc-500 p-1.5"><MessengerSmile /></button>
                   </div>
@@ -247,7 +247,7 @@ export default function FinalMessengerChat() {
                       {inputText || selectedFile ? (
                         <button onClick={() => handleSend()} className="p-3 bg-blue-600 rounded-full shadow-lg active:scale-95 transition-all"><Send className="w-5 h-5 text-white" /></button>
                       ) : (
-                        <button onClick={startRecording} className="p-2.5 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-full"><Mic className="w-6 h-6" /></button>
+                        <button onClick={startRecording} className="p-2.5 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-full transition-all active:scale-90"><Mic className="w-6 h-6" /></button>
                       )}
                     </>
                   )}
@@ -256,9 +256,9 @@ export default function FinalMessengerChat() {
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-zinc-400 opacity-30 font-bold uppercase tracking-widest">BaseKey Chat</div>
+          <div className="flex-1 flex items-center justify-center text-zinc-400 opacity-30 font-bold uppercase tracking-[0.4em]">Select a chat</div>
         )}
       </div>
     </div>
   );
-}
+                }
