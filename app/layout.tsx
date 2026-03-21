@@ -2,20 +2,29 @@ import "./globals.css";
 import { Outfit } from "next/font/google";
 import { cn } from "@/lib/utils";
 import ClientLayout from "@/components/ClientLayout";
-import { ThemeProvider } from "@/components/ThemeProvider"; // Ise import karo
+import { ThemeProvider } from "@/components/ThemeProvider";
 import type { Metadata, Viewport } from "next";
 
 const font = Outfit({ subsets: ["latin"] });
 
+// PWA Metadata: Isse browser ise asali App samjhega
 export const metadata: Metadata = {
-    title: "WaBulkSender - Free WhatsApp Bulk Sender",
-    description: "Open source WhatsApp bulk sender using Official Cloud API",
+    title: "BaseKey Messenger",
+    description: "WhatsApp Bulk & Real-Time Chat Panel",
+    manifest: "/manifest.json", // Link to your public/manifest.json
+    appleWebApp: {
+        capable: true,
+        statusBarStyle: "default",
+        title: "BaseKey",
+    },
 };
 
 export const viewport: Viewport = {
     width: "device-width",
     initialScale: 1,
     maximumScale: 1,
+    userScalable: false,
+    themeColor: "#050505", // Dark theme for app header
 };
 
 export default function RootLayout({
@@ -24,21 +33,24 @@ export default function RootLayout({
     children: React.ReactNode;
 }) {
     return (
-        /* 1. 'className' hata di aur 'suppressHydrationWarning' joda */
         <html lang="en" suppressHydrationWarning>
+            <head>
+                {/* Asali Push Notification ke liye icons */}
+                <link rel="icon" href="/icon-192x192.png" />
+                <link rel="apple-touch-icon" href="/icon-192x192.png" />
+            </head>
             <body 
                 className={cn(
                     font.className, 
-                    /* 2. Body ko dynamic banaya: Light mein white, Dark mein black */
                     "bg-white dark:bg-black text-zinc-950 dark:text-white transition-colors duration-300"
                 )}
             >
-                {/* 3. ThemeProvider se wrap kiya taaki Sidebar buttons kaam karein */}
                 <ThemeProvider 
                     attribute="class" 
                     defaultTheme="system" 
                     enableSystem
                 >
+                    {/* Note: Service Worker registration logic aapke ClientLayout mein jayegi */}
                     <ClientLayout>
                         {children}
                     </ClientLayout>
