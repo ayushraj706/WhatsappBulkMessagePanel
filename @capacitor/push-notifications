@@ -1,0 +1,20 @@
+import { PushNotifications } from '@capacitor/push-notifications';
+
+const setupNotifications = async () => {
+  // 1. Permission maango
+  let perm = await PushNotifications.checkPermissions();
+  if (perm.receive !== 'granted') {
+    perm = await PushNotifications.requestPermissions();
+  }
+
+  if (perm.receive === 'granted') {
+    // 2. Register karo (FCM Token lene ke liye)
+    await PushNotifications.register();
+  }
+
+  // 3. Notification milne par kya karna hai?
+  PushNotifications.addListener('pushNotificationReceived', (notification) => {
+    console.log('Push received: ', notification);
+    // Yahan hum asali Android pop-up trigger karenge
+  });
+};
