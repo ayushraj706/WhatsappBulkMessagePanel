@@ -63,8 +63,7 @@ export default function MessengerStyleChat() {
   };
 
   return (
-    // bg-white (Light) aur dark:bg-black (Dark) set kiya hai
-    <div className="flex h-full w-full max-w-full bg-white dark:bg-black text-zinc-900 dark:text-white overflow-hidden transition-colors duration-300">
+    <div className="flex h-full w-full max-w-full bg-white dark:bg-black text-zinc-950 dark:text-white overflow-hidden transition-colors duration-300">
       
       {/* 1. Sidebar Section */}
       <div className={cn(
@@ -74,9 +73,9 @@ export default function MessengerStyleChat() {
         <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 shrink-0">
             <h1 className="text-xl font-bold">Messages</h1>
         </div>
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
           {contacts.map((num) => (
-            <div key={num} onClick={() => setSelectedContact(num)} className="p-4 flex items-center gap-3 cursor-pointer border-b border-zinc-100 dark:border-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-900">
+            <div key={num} onClick={() => setSelectedContact(num)} className="p-4 flex items-center gap-3 cursor-pointer border-b border-zinc-100 dark:border-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
               <ChatBubbleAvatar fallback={String(num).slice(-2)} className="h-10 w-10 border border-zinc-200 dark:border-zinc-700" />
               <div className="min-w-0 text-left">
                   <p className="font-semibold text-sm truncate">{num}</p>
@@ -94,15 +93,18 @@ export default function MessengerStyleChat() {
       )}>
         {selectedContact ? (
           <>
-            <div className="h-14 border-b border-zinc-200 dark:border-zinc-900 bg-white/80 dark:bg-black/80 backdrop-blur-md flex items-center gap-3 px-4 shrink-0 z-40">
-              <button onClick={() => setSelectedContact(null)} className="md:hidden"><ChevronLeft className="w-6 h-6 text-zinc-500 dark:text-zinc-400" /></button>
+            {/* STABLE SUB-HEADER: Pehle bg-black tha, ab white/black switch hoga */}
+            <div className="h-14 border-b border-zinc-200 dark:border-zinc-900 bg-white dark:bg-black/90 backdrop-blur-md flex items-center gap-3 px-4 shrink-0 z-40 w-full transition-colors">
+              <button onClick={() => setSelectedContact(null)} className="md:hidden">
+                <ChevronLeft className="w-6 h-6 text-zinc-800 dark:text-zinc-200" />
+              </button>
               <div className="flex flex-col text-left">
-                <span className="font-bold text-sm tracking-tight">{selectedContact}</span>
-                <span className="text-[9px] text-zinc-500 dark:text-zinc-500 font-bold uppercase tracking-widest">WhatsApp Business</span>
+                <span className="font-bold text-sm tracking-tight text-zinc-900 dark:text-white">{selectedContact}</span>
+                <span className="text-[10px] text-zinc-500 dark:text-zinc-500 font-bold uppercase tracking-widest">WhatsApp Business</span>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto w-full relative bg-white dark:bg-black">
+            <div className="flex-1 overflow-y-auto w-full relative bg-white dark:bg-black transition-colors">
               <ChatMessageList className="p-4 pr-6 space-y-6 min-h-full">
                 {filteredMessages.map((msg) => (
                   <ChatBubble key={msg.id} variant={msg.type === "sent" ? "sent" : "received"}>
@@ -118,12 +120,12 @@ export default function MessengerStyleChat() {
               </ChatMessageList>
             </div>
 
-            {/* INTERACTIVE INPUT BAR */}
-            <div className="pb-6 pt-2 pl-0 pr-6 bg-white dark:bg-black border-t border-zinc-200 dark:border-zinc-900 shrink-0 z-40 w-full">
+            {/* INTERACTIVE INPUT BAR: Icons use text-zinc-800 (Light) and text-white (Dark) */}
+            <div className="pb-6 pt-2 pl-0 pr-6 bg-white dark:bg-black border-t border-zinc-200 dark:border-zinc-900 shrink-0 z-40 w-full transition-colors">
               <div className="flex items-center gap-1.5 md:gap-3 transition-all">
                 
                 <div className={cn(
-                  "flex items-center gap-0.5 text-zinc-600 dark:text-white transition-all duration-300 overflow-hidden shrink-0",
+                  "flex items-center gap-0.5 text-zinc-800 dark:text-white transition-all duration-300 overflow-hidden shrink-0",
                   isInputFocused ? "w-0 opacity-0 invisible" : "w-auto opacity-100 visible"
                 )}>
                   <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition"><Camera className="w-5 h-5 md:w-6 md:h-6" /></button>
@@ -136,8 +138,7 @@ export default function MessengerStyleChat() {
 
                 <button onClick={() => setIsInputFocused(false)} className={cn("transition-all duration-300 shrink-0", isInputFocused ? "w-10 opacity-100" : "w-0 opacity-0")}><ChevronRight className="w-6 h-6 text-blue-500" /></button>
 
-                {/* Central Pill Input (bg-zinc-100 for Light / bg-[#1c1c1e] for Dark) */}
-                <div className="flex-1 flex items-center bg-zinc-100 dark:bg-[#1c1c1e] rounded-full px-4 py-1 border border-transparent focus-within:border-zinc-300 dark:focus-within:border-zinc-700 transition-all ml-1">
+                <div className="flex-1 flex items-center bg-zinc-100 dark:bg-[#1c1c1e] rounded-full px-4 py-1 border border-transparent focus-within:border-zinc-300 dark:focus-within:border-zinc-700 transition-all ml-1 shadow-sm">
                   <ChatInput 
                     placeholder="Aa" 
                     value={inputText}
@@ -146,18 +147,20 @@ export default function MessengerStyleChat() {
                     onFocus={() => setIsInputFocused(true)}
                     className="h-10 text-zinc-900 dark:text-white"
                   />
-                  <button className="text-zinc-500 dark:text-zinc-400 p-1"><Smile className="w-5 h-5" /></button>
+                  {/* Emoji Icon: dynamic color switch */}
+                  <button className="text-zinc-700 dark:text-zinc-400 hover:text-blue-500 p-1"><Smile className="w-5 h-5" /></button>
                 </div>
 
                 <div className="flex items-center min-w-[40px] justify-center shrink-0">
                   {inputText.trim().length > 0 ? (
                     <button onClick={() => handleSend()} className="p-2 bg-blue-600 rounded-full shadow-lg transform scale-110"><Send className="w-4 h-4 text-white fill-current" /></button>
                   ) : (
-                    <button onClick={() => handleSend("❤️")} className="p-2 text-red-500 hover:scale-125 transition-transform"><Heart className="w-6 h-6 fill-current" /></button>
+                    /* Heart Icon: Remains red but ensure outline is crisp */
+                    <button onClick={() => handleSend("❤️")} className="p-2 text-red-500 hover:scale-125 transition-transform"><Heart className="w-6 h-6 fill-current shadow-sm" /></button>
                   )}
                 </div>
               </div>
-              {isRecording && <p className="text-[10px] text-red-500 font-bold ml-12 mt-1 uppercase tracking-widest">Recording...</p>}
+              {isRecording && <p className="text-[10px] text-red-500 font-bold ml-12 mt-1 uppercase tracking-widest animate-pulse">Recording...</p>}
             </div>
           </>
         ) : (
