@@ -11,15 +11,14 @@ import {
 import { ChatInput } from "@/components/ui/chat/chat-input";
 import { cn } from "@/lib/utils";
 
-export default function ProfessionalMessengerChat() {
+export default function MessengerStyleChat() {
   const [messages, setMessages] = useState<any[]>([]);
   const [inputText, setInputText] = useState("");
   const [selectedContact, setSelectedContact] = useState<string | null>(null);
   
-  // Logic: Type karne par icons gayab karne ke liye state
+  // Logic States
   const [isManualCollapsed, setIsManualCollapsed] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const mediaRecorder = useRef<MediaRecorder | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null); // Keyboard persistence ke liye
 
   useEffect(() => {
     const q = query(collection(db, "chats"), orderBy("timestamp", "asc"));
@@ -29,7 +28,6 @@ export default function ProfessionalMessengerChat() {
     return () => unsubscribe();
   }, []);
 
-  const contacts = Array.from(new Set(messages.map(m => m.sender))).filter(s => s !== "Me");
   const filteredMessages = messages.filter(m => (m.sender === selectedContact) || (m.type === "sent" && m.receiver === selectedContact));
 
   const handleSend = async (customText?: string) => {
@@ -48,27 +46,18 @@ export default function ProfessionalMessengerChat() {
     } catch (err) { console.error(err); }
   };
 
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder.current = new MediaRecorder(stream);
-      mediaRecorder.current.start();
-      setIsRecording(true);
-    } catch (err) { console.error("Mic error:", err); }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorder.current && isRecording) {
-      mediaRecorder.current.stop();
-      setIsRecording(false);
-    }
-  };
-
-  // Logic: Icons tab hide honge jab type kar rahe ho YA manual collapse kiya ho
+  // 1 Akshar type hote hi icons gayab, ya manual toggle
   const shouldHideIcons = inputText.length > 0 || isManualCollapsed;
 
+  // Arrow Click logic: Keyboard on rakhte hue toggle karna
+  const toggleIcons = (e: React.MouseEvent) => {
+    e.preventDefault(); // Click hone par input focus nahi jayega
+    setIsManualCollapsed(!isManualCollapsed);
+    if (inputRef.current) inputRef.current.focus(); // Wapas focus input par
+  };
+
   return (
-    <div className="flex h-full w-full max-w-full bg-white dark:bg-[#09090b] text-zinc-950 dark:text-white overflow-hidden transition-colors duration-300">
+    <div className="flex h-full w-full max-w-full bg-white dark:bg-[#09090b] text-zinc-950 dark:text-white overflow-hidden transition-colors duration-500">
       
       {/* 1. Sidebar Section */}
       <div className={cn(
@@ -79,12 +68,12 @@ export default function ProfessionalMessengerChat() {
             <h1 className="text-xl font-bold tracking-tight">Messages</h1>
         </div>
         <div className="flex-1 overflow-y-auto">
-          {contacts.map((num) => (
+          {messages.length > 0 && Array.from(new Set(messages.map(m => m.sender))).filter(s => s !== "Me").map((num) => (
             <div key={num} onClick={() => setSelectedContact(num)} className="p-4 flex items-center gap-3 cursor-pointer border-b border-zinc-100 dark:border-zinc-900/50 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
               <ChatBubbleAvatar fallback={String(num).slice(-2)} className="h-10 w-10 border border-zinc-200 dark:border-zinc-700" />
               <div className="min-w-0 text-left">
                   <p className="font-semibold text-sm truncate">{num}</p>
-                  <p className="text-[10px] text-green-500 font-medium">Online</p>
+                  <p className="text-[10px] text-green-500 font-medium">Active</p>
               </div>
             </div>
           ))}
@@ -93,17 +82,18 @@ export default function ProfessionalMessengerChat() {
 
       {/* 2. Chat Window Section */}
       <div className={cn(
-        "flex-1 flex flex-col bg-zinc-50 dark:bg-black relative min-h-0 w-full max-w-full transition-colors", 
+        "flex-1 flex flex-col bg-zinc-50 dark:bg-black relative min-h-0 w-full max-w-full", 
         !selectedContact ? "hidden md:flex" : "flex"
       )}>
         {selectedContact ? (
           <>
-            <div className="h-14 border-b border-zinc-200 dark:border-zinc-900 bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-md flex items-center gap-3 px-4 shrink-0 z-40 w-full">
+            {/* DYNAMIC HEADER: Background changes with theme */}
+            <div className="h-14 border-b border-zinc-200 dark:border-zinc-900 bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-md flex items-center gap-3 px-4 shrink-0 z-40 w-full transition-colors">
               <button onClick={() => setSelectedContact(null)} className="md:hidden">
-                <ChevronLeft className="w-6 h-6 text-zinc-800 dark:text-zinc-200" />
+                <ChevronLeft className="w-6 h-6 text-black dark:text-zinc-200" />
               </button>
               <div className="flex flex-col text-left">
-                <span className="font-bold text-sm tracking-tight text-zinc-900 dark:text-white">{selectedContact}</span>
+                <span className="font-bold text-sm tracking-tight text-black dark:text-white">{selectedContact}</span>
                 <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest opacity-80">WhatsApp Business</span>
               </div>
             </div>
@@ -114,7 +104,10 @@ export default function ProfessionalMessengerChat() {
                   <ChatBubble key={msg.id} variant={msg.type === "sent" ? "sent" : "received"}>
                     <ChatBubbleMessage className={cn(
                         "text-sm shadow-sm border border-transparent",
-                        msg.type === "sent" ? "bg-blue-600 text-white" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white dark:border-zinc-700/50"
+                        msg.type === "sent" 
+                          ? "bg-blue-600 text-white" 
+                          /* RECEIVED BUBBLE: Lite mode mein light zinc */
+                          : "bg-zinc-100 dark:bg-zinc-800 text-black dark:text-white dark:border-zinc-700/50"
                     )}>
                       {msg.text}
                       <ChatBubbleTimestamp timestamp="Just now" className="text-[9px] mt-1 opacity-60 font-medium" />
@@ -124,25 +117,24 @@ export default function ProfessionalMessengerChat() {
               </ChatMessageList>
             </div>
 
-            {/* INTERACTIVE INPUT BAR */}
-            <div className="pb-6 pt-2 pl-0 pr-6 bg-white dark:bg-[#09090b] border-t border-zinc-200 dark:border-zinc-900 shrink-0 z-40 w-full">
-              <div className="flex items-center gap-1 md:gap-3 transition-all">
+            {/* INTERACTIVE MESSENGER INPUT BAR */}
+            <div className="pb-6 pt-2 pl-0 pr-6 bg-white dark:bg-[#09090b] border-t border-zinc-200 dark:border-zinc-900 shrink-0 z-40 w-full transition-colors">
+              <div className="flex items-center gap-1 md:gap-3">
                 
-                {/* ICONS GROUP: Type karne par gayab hoga */}
+                {/* ICON GROUP: Pure Black in Lite mode */}
                 <div className={cn(
-                  "flex items-center gap-0.5 text-zinc-950 dark:text-white transition-all duration-300 overflow-hidden shrink-0",
+                  "flex items-center gap-0.5 text-black dark:text-white transition-all duration-300 overflow-hidden shrink-0",
                   shouldHideIcons ? "w-0 opacity-0 invisible" : "w-auto opacity-100 visible"
                 )}>
-                  <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition"><Camera className="w-5 h-5 md:w-6 md:h-6" /></button>
-                  <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition"><ImageIcon className="w-5 h-5 md:w-6 md:h-6" /></button>
-                  <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition"><Paperclip className="w-5 h-5 md:w-6 md:h-6" /></button>
-                  <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition"><MessageSquare className="w-5 h-5 md:w-6 md:h-6" /></button>
-                  <button onMouseDown={startRecording} onMouseUp={stopRecording} className={cn("p-2 rounded-full", isRecording ? "bg-red-600 text-white animate-pulse" : "hover:bg-zinc-100 dark:hover:bg-zinc-800")}><Mic className="w-5 h-5 md:w-6 md:h-6" /></button>
+                  <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full"><Camera className="w-5 h-5 md:w-6 md:h-6" /></button>
+                  <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full"><ImageIcon className="w-5 h-5 md:w-6 md:h-6" /></button>
+                  <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full"><Paperclip className="w-5 h-5 md:w-6 md:h-6" /></button>
+                  <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full"><Mic className="w-5 h-5 md:w-6 md:h-6" /></button>
                 </div>
 
-                {/* MANUAL ARROW TOGGLE */}
+                {/* MANUAL TOGGLE ARROW: Keyboard focused rahega */}
                 <button 
-                    onClick={() => setIsManualCollapsed(!isManualCollapsed)}
+                    onMouseDown={toggleIcons} // MouseDown use kiya keyboard na hataane ke liye
                     className={cn(
                         "transition-all duration-300 shrink-0 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full p-2 flex items-center justify-center",
                         shouldHideIcons ? "w-10 opacity-100 visible" : "w-0 opacity-0 invisible"
@@ -151,35 +143,41 @@ export default function ProfessionalMessengerChat() {
                     <ChevronRight className={cn("w-6 h-6 text-blue-500 transition-transform", isManualCollapsed ? "rotate-0" : "rotate-180")} />
                 </button>
 
-                {/* PILL INPUT */}
+                {/* PILL INPUT AREA */}
                 <div className="flex-1 flex items-center bg-zinc-100 dark:bg-zinc-900 rounded-full px-4 py-1 border border-transparent focus-within:border-zinc-300 dark:focus-within:border-zinc-700 transition-all ml-1">
                   <ChatInput 
+                    ref={inputRef} // Focus handle karne ke liye
                     placeholder="Aa" 
                     value={inputText}
-                    onChange={(e) => setInputText(e.target.value)}
+                    onChange={(e) => {
+                      setInputText(e.target.value);
+                      if (e.target.value.length > 0) setIsManualCollapsed(false);
+                    }}
                     onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }}
-                    onFocus={() => setIsManualCollapsed(false)} // Focus par logic reset
-                    className="h-10 text-zinc-900 dark:text-white"
+                    className="h-10 text-black dark:text-white"
                   />
-                  <button className="text-zinc-950 dark:text-zinc-400 p-1"><Smile className="w-5 h-5" /></button>
+                  {/* Emoji: Pure Black in Lite mode */}
+                  <button className="text-black dark:text-zinc-400 p-1"><Smile className="w-5 h-5" /></button>
                 </div>
 
                 <div className="flex items-center min-w-[40px] justify-center shrink-0">
                   {inputText.trim().length > 0 ? (
                     <button onClick={() => handleSend()} className="p-2 bg-blue-600 rounded-full shadow-lg transform scale-110 active:scale-95 transition-all"><Send className="w-4 h-4 text-white fill-current" /></button>
                   ) : (
-                    /* HEART: Light mode mein Black, Chat mein Red */
-                    <button onClick={() => handleSend("❤️")} className="p-2 text-zinc-950 dark:text-red-500 hover:scale-125 transition-all"><Heart className="w-6 h-6 fill-current" /></button>
+                    /* HEART: Input bar mein Pure Black (Lite) / Red (Dark) */
+                    <button 
+                      onClick={() => handleSend("❤️")} 
+                      className="p-2 transition-all hover:scale-125 text-black dark:text-red-500"
+                    >
+                      <Heart className="w-6 h-6 fill-current" />
+                    </button>
                   )}
                 </div>
               </div>
             </div>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-700 bg-white dark:bg-[#09090b] font-bold uppercase tracking-widest opacity-50">
-             <div className="w-16 h-16 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl flex items-center justify-center mb-4 border border-zinc-200 dark:border-zinc-800"><span className="text-2xl">💬</span></div>
-             <p className="text-xs">BaseKey Panel</p>
-          </div>
+          <div className="flex-1 flex items-center justify-center text-zinc-400 dark:text-zinc-700 bg-white dark:bg-[#09090b] font-bold uppercase tracking-widest opacity-50">Select a chat</div>
         )}
       </div>
     </div>
