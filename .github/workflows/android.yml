@@ -18,10 +18,12 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
+      # Naya: IS_ANDROID_BUILD variable jodd diya hai
       - name: Next.js Build
         run: npm run build
+        env:
+          IS_ANDROID_BUILD: true
 
-      # Capacitor ko 'out' folder dene ke liye
       - name: Ensure Out Directory
         run: |
           mkdir -p out
