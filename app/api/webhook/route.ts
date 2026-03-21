@@ -50,7 +50,6 @@ export async function POST(req: Request) {
       else if (message.type === "image") content = "📸 Photo Received";
       else if (message.type === "audio") content = "🎤 Voice Note Received";
 
-      // 1. Firebase mein message save karo
       await addDoc(collection(db, "chats"), {
         sender: message.from,
         name: contact?.profile?.name || "Unknown",
@@ -60,9 +59,8 @@ export async function POST(req: Request) {
         status: "read"
       });
 
-      // 2. REAL-TIME PUSH NOTIFICATION TRIGGER (With Safety Fix)
+      // --- REAL-TIME PUSH NOTIFICATION (RELIABLE VERSION) ---
       const subsSnapshot = await getDocs(collection(db, "subscriptions"));
-      
       const payload = JSON.stringify({
         title: contact?.profile?.name || message.from,
         body: content,
@@ -70,37 +68,35 @@ export async function POST(req: Request) {
         senderId: message.from
       });
 
-      // Har subscription ko check karke bhejo
       subsSnapshot.forEach((subscriptionDoc) => {
         const subData = subscriptionDoc.data();
 
-        // FIX: Agar endpoint nahi hai toh skip karo taaki server crash na ho
-        if (!subData || !subData.endpoint) {
-            console.error("LOG: Missing endpoint for sub:", subscriptionDoc.id);
+        // STRICT VALIDATION: Isse 'endpoint' wala error kabhi nahi aayega
+        if (!subData || !subData.endpoint || !subData.keys) {
+            console.warn(`LOG: Skipping bad subscription record: ${subscriptionDoc.id}`);
             return;
         }
 
-        // Webpush ko wahi format chahiye jo browser deta hai
-        const pushSubscription = {
+        const pushConfig = {
             endpoint: subData.endpoint,
             keys: {
-                auth: subData.keys?.auth,
-                p256dh: subData.keys?.p256dh
+                auth: subData.keys.auth,
+                p256dh: subData.keys.p256dh
             }
         };
 
-        webpush.sendNotification(pushSubscription as any, payload)
-          .then(() => console.log("LOG: Push Sent to", subscriptionDoc.id))
+        webpush.sendNotification(pushConfig as any, payload)
+          .then(() => console.log(`LOG: Push sent to ${subscriptionDoc.id}`))
           .catch(err => {
-              console.error("LOG: Push Error for", subscriptionDoc.id, err.statusCode);
-              // Agar user ne app delete kar di hai (410), toh database se hata do (optional)
+              // 410 ka matlab hai user ne app un-install kar di hai
+              console.error(`LOG: Push Error (${subscriptionDoc.id}):`, err.statusCode);
           });
       });
     }
 
     return NextResponse.json({ status: "success" });
   } catch (error: any) {
-    console.error("LOG: Webhook Error:", error.message);
+    console.error("LOG: Critical Webhook Error:", error.message);
     return NextResponse.json({ status: "error" }, { status: 500 });
   }
 }
