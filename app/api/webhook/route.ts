@@ -3,8 +3,9 @@ import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, updateDoc, doc, addDoc, serverTimestamp } from "firebase/firestore";
 import admin from 'firebase-admin';
 
-// 1. Firebase Admin Initialization (Build-Safe Version)
-// GitHub Actions mein keys nahi hoti, isliye ye check zaroori hai
+// Static build error se bachne ke liye ye line zaroori hai
+export const dynamic = 'force-dynamic';
+
 if (!admin.apps.length) {
   const projectId = process.env.FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
@@ -16,7 +17,7 @@ if (!admin.apps.length) {
         credential: admin.credential.cert({
           projectId,
           clientEmail,
-          privateKey: privateKey.replace(/\\n/g, '\n'), // Newline fix
+          privateKey: privateKey.replace(/\\n/g, '\n'),
         }),
       });
       console.log("Firebase Admin Initialized Successfully ✅");
@@ -24,8 +25,7 @@ if (!admin.apps.length) {
       console.error("Firebase Admin Init Error:", error.message);
     }
   } else {
-    // Ye logs GitHub build ke waqt dikhenge
-    console.warn("Firebase Admin Keys missing (Expected during Build). Skipping Init... ⚠️");
+    console.warn("Firebase Admin Keys missing (Build Time). Skipping Init... ⚠️");
   }
 }
 
@@ -46,24 +46,18 @@ export async function POST(req: Request) {
     const body = await req.json();
     const value = body.entry?.[0]?.changes?.[0]?.value;
 
-    // --- A. STATUS/TICK UPDATES ---
     const statusUpdate = value?.statuses?.[0];
     if (statusUpdate) {
       const metaId = statusUpdate.id;
       const newStatus = statusUpdate.status;
-
       const q = query(collection(db, "chats"), where("metaId", "==", metaId));
       const querySnapshot = await getDocs(q);
-
       if (!querySnapshot.empty) {
-        await updateDoc(doc(db, "chats", querySnapshot.docs[0].id), {
-          status: newStatus 
-        });
+        await updateDoc(doc(db, "chats", querySnapshot.docs[0].id), { status: newStatus });
       }
       return NextResponse.json({ status: "success" });
     }
 
-    // --- B. INCOMING MESSAGE LOGIC ---
     const message = value?.messages?.[0];
     const contact = value?.contacts?.[0];
 
@@ -73,7 +67,6 @@ export async function POST(req: Request) {
       else if (message.type === "image") content = "📸 Photo Received";
       else if (message.type === "audio") content = "🎤 Voice Note Received";
 
-      // 1. Message save karein
       await addDoc(collection(db, "chats"), {
         sender: message.from,
         name: contact?.profile?.name || "Unknown",
@@ -84,37 +77,23 @@ export async function POST(req: Request) {
         metaId: message.id 
       });
 
-      // 2. Notification bhejien (Sirf tab jab admin initialize ho)
       if (admin.apps.length > 0) {
         const subsSnapshot = await getDocs(collection(db, "subscriptions"));
-        
         const payload = {
-          notification: {
-            title: contact?.profile?.name || message.from,
-            body: content,
-          },
-          data: {
-            url: `/chat?num=${message.from}`,
-            senderId: message.from
-          }
+          notification: { title: contact?.profile?.name || message.from, body: content },
+          data: { url: `/chat?num=${message.from}`, senderId: message.from }
         };
 
-        // Saare saved devices ko notification bhejien
         subsSnapshot.forEach((subDoc) => {
           const deviceToken = subDoc.data().token;
           if (deviceToken) {
-            admin.messaging().send({
-              ...payload,
-              token: deviceToken
-            }).catch(err => console.error("FCM Send Error:", err.message));
+            admin.messaging().send({ ...payload, token: deviceToken }).catch(err => console.error(err));
           }
         });
       }
     }
-
     return NextResponse.json({ status: "success" });
   } catch (error: any) {
-    console.error("LOG: Critical Webhook Error:", error.message);
     return NextResponse.json({ status: "error" }, { status: 500 });
   }
 }
