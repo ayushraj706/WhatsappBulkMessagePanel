@@ -1,9 +1,9 @@
-// 1. App ko installable aur background mein zinda rakhne ke liye
+// 1. App background logic
 self.addEventListener('fetch', (event) => {
-    // Background requests handle karne ke liye zaroori hai
+    // Empty but required for PWA installation
 });
 
-// 2. WhatsApp-Style Push Logic (Lock screen aur Background support)
+// 2. Heads-up Notification Logic (Top-down Pop-up)
 self.addEventListener('push', function(event) {
   if (!event.data) return;
 
@@ -12,22 +12,27 @@ self.addEventListener('push', function(event) {
   const options = {
     body: data.body || 'Naya message aaya hai!',
     icon: '/icon-192x192.png',
-    badge: '/icon-192x192.png', // Status bar ka chhota logo
-    vibrate: [300, 100, 300], // Professional vibration pattern
+    badge: '/icon-192x192.png',
     
-    // WHATSAPP FEEL: Tag aur Renotify se har message par alert aayega
+    // ASALI WHATSAPP FEEL: 
+    // Is vibrate pattern se phone zor se vibrate hoga aur upar se banner girega
+    vibrate: [500, 110, 500, 110, 450, 110, 200, 110, 170, 40, 450, 110, 200, 110, 170, 40],
+    
     tag: 'basekey-msg', 
     renotify: true,
+    requireInteraction: true, // Jab tak aap swipe nahi karoge, upar hi rahega
     
-    // Lock screen par content dikhane ke liye
-    requireInteraction: true, 
-    
+    // ACTION BUTTONS (Exactly like your screenshot)
     actions: [
       { 
         action: 'reply', 
         type: 'text', 
-        title: 'Reply Karo...', 
+        title: 'Reply', 
         placeholder: 'Yahan likhiye...' 
+      },
+      { 
+        action: 'mark-read', 
+        title: 'Mark as read' 
       }
     ],
     data: {
@@ -41,11 +46,11 @@ self.addEventListener('push', function(event) {
   );
 });
 
-// 3. Notification Click & Quick Reply Logic
+// 3. Notification Actions (Reply aur Mark as Read handle karna)
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
 
-  // HANDLE QUICK REPLY
+  // A. AGAR USER REPLY KARTA HAI
   if (event.action === 'reply' && event.reply) {
     const replyText = event.reply;
     const senderId = event.notification.data.senderId;
@@ -58,18 +63,20 @@ self.addEventListener('notificationclick', function(event) {
       })
     );
   } 
-  // HANDLE CLICK (Open App or Focus Existing Tab)
+  // B. AGAR USER MARK AS READ DABATA HAI (Abhi ke liye sirf band hoga)
+  else if (event.action === 'mark-read') {
+      console.log("Message marked as read");
+  }
+  // C. AGAR USER DIRECT CLICK KARTA HAI
   else {
     event.waitUntil(
       clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
-        // Agar pehle se chat khula hai toh wahi le jao
         for (var i = 0; i < windowClients.length; i++) {
           var client = windowClients[i];
           if (client.url.includes('/chat') && 'focus' in client) {
             return client.focus();
           }
         }
-        // Nahi toh naya window kholo
         if (clients.openWindow) {
           return clients.openWindow(event.notification.data.url);
         }
