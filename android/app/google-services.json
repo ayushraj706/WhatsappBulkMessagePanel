@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "51177935348",
+    "firebase_url": "https://success-points-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "success-points",
+    "storage_bucket": "success-points.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:51177935348:android:a9a27a35afe1fa68bd29a1",
+        "android_client_info": {
+          "package_name": "com.basekey.messenger"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "51177935348-db8aigttpgbr1ovq14dma0ohhsrkf230.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAMl7vh23-qXgLX2GRqTd63SaXIhyAZ4VQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "51177935348-db8aigttpgbr1ovq14dma0ohhsrkf230.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
