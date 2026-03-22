@@ -18,10 +18,10 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      # FIX: Build se pehle API folder hatao taaki static export success ho jaye
+      # API folder hatao taaki static build fail na ho
       - name: Next.js Build
         run: |
-          rm -rf app/api
+          rm -rf app/api 
           npm run build
         env:
           IS_ANDROID_BUILD: true
@@ -31,9 +31,27 @@ jobs:
           mkdir -p out
           touch out/index.html
 
-      - name: Capacitor Sync
+      # AUTO-FIX LOGIC: Broken android folder ko theek karega
+      - name: Capacitor Sync & Repair
         run: |
-          npx cap add android || true
+          # 1. Google Config ka backup lo agar exist karti hai
+          if [ -f android/app/google-services.json ]; then
+            cp android/app/google-services.json ./google-services-temp.json
+          fi
+          
+          # 2. Purana tuta hua android folder delete karo
+          rm -rf android
+          
+          # 3. Fresh Android Platform add karo (Isse 'gradlew' ban jayega)
+          npx cap add android
+          
+          # 4. Google Config wapas sahi jagah rakho
+          if [ -f ./google-services-temp.json ]; then
+            mkdir -p android/app
+            mv ./google-services-temp.json android/app/google-services.json
+          fi
+          
+          # 5. Sync karo
           npx cap sync android
 
       - name: Setup Java
