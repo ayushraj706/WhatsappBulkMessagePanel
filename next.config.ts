@@ -6,10 +6,7 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
-  // API routes ko ignore karne ke liye jab static build ho
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // TypeScript errors ko build ke waqt ignore karega
   typescript: {
     ignoreBuildErrors: true,
   }
