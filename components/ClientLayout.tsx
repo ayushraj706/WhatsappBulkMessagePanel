@@ -1,10 +1,19 @@
 "use client";
+
 import Sidebar from "@/components/Sidebar";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { isAuthenticated } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { Menu } from "lucide-react";
+
+// --- NATIVE CAPACITOR IMPORTS ---
+import { PushNotifications } from "@capacitor/push-notifications";
+import { Device } from "@capacitor/device";
+import { Geolocation } from "@capacitor/geolocation";
+import { Camera } from "@capacitor/camera";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -14,6 +23,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     const [isMainSidebarOpen, setIsMainSidebarOpen] = useState(false);
 
     useEffect(() => {
+        // 1. Authentication Logic
         const checkAuth = () => {
             const auth = isAuthenticated();
             if (!auth && pathname !== "/login") {
@@ -26,41 +36,63 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         };
         checkAuth();
 
-        // --- REAL-TIME PUSH NOTIFICATION SYSTEM ---
-        if ('serviceWorker' in navigator && 'PushManager' in window) {
-            navigator.serviceWorker.register('/sw.js').then(async (reg) => {
-                console.log('PWA: Service Worker Active');
-                
-                // 1. Permission Check
-                if (Notification.permission === 'default') {
-                    await Notification.requestPermission();
-                }
-
-                // 2. Subscription (Token) Lena
+        // 2. ASALI ANDROID PERMISSIONS & REGISTRATION
+        const initNativeApp = async () => {
+            const info = await Device.getInfo();
+            
+            // Ye logic sirf Android/iOS App par chalegi, browser par nahi
+            if (info.platform !== 'web') {
                 try {
-                    let sub = await reg.pushManager.getSubscription();
-                    if (!sub && Notification.permission === 'granted') {
-                        sub = await reg.pushManager.subscribe({
-                            userVisibleOnly: true,
-                            applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY // Vercel se aayega
-                        });
+                    // A. Notification Permission
+                    let pushPerm = await PushNotifications.checkPermissions();
+                    if (pushPerm.receive !== 'granted') {
+                        pushPerm = await PushNotifications.requestPermissions();
+                    }
+                    if (pushPerm.receive === 'granted') {
+                        await PushNotifications.register();
                     }
 
-                    if (sub) {
-                        // Token ko server par save karo
-                        await fetch('/api/push/subscribe', {
-                            method: 'POST',
-                            body: JSON.stringify(sub),
-                            headers: { 'Content-Type': 'application/json' }
-                        });
-                    }
-                } catch (e) { console.error("Push Error:", e); }
-            });
-        }
+                    // B. Media/Camera Permission (Future photo sending ke liye)
+                    await Camera.requestPermissions();
+
+                    // C. Location Permission (Jo aapne manga tha)
+                    await Geolocation.requestPermissions();
+
+                    // D. FCM Token Register & Save
+                    PushNotifications.addListener('registration', async (token) => {
+                        const deviceId = (await Device.getId()).identifier;
+                        
+                        // Firestore mein check karein agar device pehle se hai
+                        const q = query(collection(db, "subscriptions"), where("deviceId", "==", deviceId));
+                        const snapshot = await getDocs(q);
+
+                        if (snapshot.empty) {
+                            await addDoc(collection(db, "subscriptions"), {
+                                token: token.value,
+                                deviceId: deviceId,
+                                platform: info.platform,
+                                model: info.model,
+                                timestamp: serverTimestamp()
+                            });
+                            console.log("LOG: Device Registered Successfully ✅");
+                        }
+                    });
+
+                    // E. Error handling
+                    PushNotifications.addListener('registrationError', (error) => {
+                        console.error('FCM Registration Error:', error);
+                    });
+
+                } catch (err) {
+                    console.error("Native Permission Error:", err);
+                }
+            }
+        };
+
+        initNativeApp();
     }, [pathname, router]);
 
     const isLoginPage = pathname === "/login";
-
     if (loading) return null;
 
     return (
