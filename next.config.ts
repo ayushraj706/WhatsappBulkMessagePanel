@@ -1,12 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Sirf Android build ke waqt static export on karega
+  // Sirf Android build (GitHub) par export karega, Vercel par nahi
   output: process.env.IS_ANDROID_BUILD === 'true' ? 'export' : undefined,
   images: {
-    unoptimized: true, 
+    unoptimized: true,
   },
-  // Build ke waqt TypeScript errors ko ignore karega taaki APK ban jaye
   typescript: {
     ignoreBuildErrors: true,
   }
