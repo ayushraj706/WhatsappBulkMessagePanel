@@ -18,9 +18,11 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      # Naya: IS_ANDROID_BUILD variable jodd diya hai
+      # FIX: Build se pehle API folder hatao taaki static export success ho jaye
       - name: Next.js Build
-        run: npm run build
+        run: |
+          rm -rf app/api
+          npm run build
         env:
           IS_ANDROID_BUILD: true
 
